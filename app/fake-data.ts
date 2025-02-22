@@ -4,6 +4,10 @@ export type Message = {
   content: string;
   timestamp: string;
   type: string;
+  username?: string;
+  handle?: string;
+  likes?: number;
+  retweets?: number;
 };
 
 export const sampleMessages: Message[] = [
@@ -28,6 +32,7 @@ export const sampleMessages: Message[] = [
   },
   {
     id: "3",
+    type: "regular",
     label: "Latest update",
     content:
       "Launching our new feature today - super excited to share it with everyone! 🎉",
@@ -35,12 +40,14 @@ export const sampleMessages: Message[] = [
   },
   {
     id: "4",
+    type: "regular",
     content: "This is a regular message",
     timestamp: Date.now().toString(),
     label: "Assistant",
   },
   {
     id: "5",
+    type: "tweet",
     content: "Just setting up my Twitter!",
     timestamp: Date.now().toString(),
     label: "Tweet",
