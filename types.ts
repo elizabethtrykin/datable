@@ -3,7 +3,7 @@ export interface BaseMessage {
   content: string;
   timestamp: number;
   label: string;
-  type: "regular" | "tweet";
+  type: "regular" | "tweet" | "image";
 }
 
 export interface RegularMessage extends BaseMessage {
@@ -18,4 +18,9 @@ export interface TweetMessage extends BaseMessage {
   retweets: number;
 }
 
-export type Message = RegularMessage | TweetMessage;
+export interface ImageMessage extends BaseMessage {
+  type: "image";
+  imageUrl: string;
+}
+
+export type Message = RegularMessage | TweetMessage | ImageMessage;

@@ -5,9 +5,10 @@ import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
 import { Button } from "@/components/ui/button";
 import { Mic, Square } from "lucide-react";
 import * as THREE from "three";
-import { useConversation } from "@11labs/react";
 import { Conversation } from "@11labs/client";
-
+import { useMessages } from "@/contexts/MessagesContext";
+import { Message } from "@/types";
+import { v4 as uuidv4 } from "uuid";
 extend(THREE);
 
 const fragmentShader = `
@@ -158,6 +159,7 @@ export default function VoiceVisualization() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const { addMessage } = useMessages();
 
   async function requestMicrophonePermission() {
     try {
@@ -194,6 +196,39 @@ export default function VoiceVisualization() {
       onDisconnect: () => {
         setIsConnected(false);
         setIsSpeaking(false);
+      },
+      clientTools: {
+        addArtifactToConversation: async (data: { message: Message }) => {
+          console.log("adding artifact:", data);
+          if (data.message.type === "tweet") {
+            addMessage({
+              ...data.message,
+              id: uuidv4(),
+              type: "tweet",
+              content: data.message.content || "",
+              label: data.message.label || "Assistant",
+              timestamp: Date.now(),
+            });
+          } else if (data.message.type === "image") {
+            addMessage({
+              id: uuidv4(),
+              type: "image",
+              content: data.message.content || "",
+              label: data.message.label || "Assistant",
+              timestamp: Date.now(),
+              imageUrl: data.message.imageUrl || "",
+            });
+          } else if (data.message.type === "regular") {
+            addMessage({
+              ...data.message,
+              id: uuidv4(),
+              type: "regular",
+              content: data.message.content || "",
+              label: data.message.label || "Assistant",
+              timestamp: Date.now(),
+            });
+          }
+        },
       },
       onError: (error) => {
         console.log(error);

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Message } from "@/app/fake-data";
+import { Message } from "@/types";
 
 export function MessageCard({ message }: { message: Message }) {
   return (
