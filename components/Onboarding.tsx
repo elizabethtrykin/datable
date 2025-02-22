@@ -58,26 +58,30 @@ export function Onboarding() {
         gender: formData.gender
       }));
 
-      // Create profile in database
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          twitter_handle: formData.twitterHandle?.trim() || null,
-          linkedin_url: formData.linkedinHandle ? `https://www.linkedin.com/in/${formData.linkedinHandle.trim()}/` : null,
-          personal_website: formData.personalWebsite?.trim() || null,
-          other_links: formData.otherLinks?.map(link => link.trim()) || null
-        }),
-      });
+      if (formData.gender === "male") {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            twitter_handle: formData.twitterHandle?.trim() || null,
+            linkedin_url: formData.linkedinHandle ? `https://www.linkedin.com/in/${formData.linkedinHandle.trim()}/` : null,
+            personal_website: formData.personalWebsite?.trim() || null,
+            other_links: formData.otherLinks?.map(link => link.trim()) || null
+          }),
+        });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to create profile');
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to create profile');
+        }
+        
+        router.push('/');
+      } else {
+        router.push('/chat');
       }
 
-      router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
