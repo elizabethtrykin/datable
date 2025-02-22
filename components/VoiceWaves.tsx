@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Mic, Square } from "lucide-react";
 import * as THREE from "three";
 import { useConversation } from "@11labs/react";
+import { Conversation } from "@11labs/client";
 
 extend(THREE);
 
@@ -154,46 +155,67 @@ function GradientBackground() {
 }
 
 export default function VoiceVisualization() {
-  const [isRecording, setIsRecording] = useState(false);
+  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const conversation = useConversation({
-    onConnect: () => console.log("Connected"),
-    onDisconnect: () => {
-      console.log("Disconnected");
-      setIsRecording(false);
-    },
-    onMessage: (message) => console.log("Message:", message),
-    onError: (error) => {
-      console.error("Error:", error);
-      setIsRecording(false);
-    },
-  });
-
-  const startConversation = async () => {
+  async function requestMicrophonePermission() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      await conversation.startSession({
-        agentId: process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID,
-      });
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Failed to start conversation:", error);
-      setIsRecording(false);
+      return true;
+    } catch {
+      return false;
     }
-  };
+  }
 
-  const stopConversation = async () => {
+  async function getSignedUrl(): Promise<string> {
+    const response = await fetch("/api/signed-url");
+    if (!response.ok) {
+      throw Error("Failed to get signed url");
+    }
+    const data = await response.json();
+    return data.signedUrl;
+  }
+
+  async function startConversation() {
+    const hasPermission = await requestMicrophonePermission();
+    if (!hasPermission) {
+      alert("No permission");
+      return;
+    }
+    const signedUrl = await getSignedUrl();
+    const conv = await Conversation.startSession({
+      signedUrl: signedUrl,
+      preferHeadphonesForIosDevices: true,
+      onConnect: () => {
+        setIsConnected(true);
+        setIsSpeaking(true);
+      },
+      onDisconnect: () => {
+        setIsConnected(false);
+        setIsSpeaking(false);
+      },
+      onError: (error) => {
+        console.log(error);
+        alert("An error occurred during the conversation");
+      },
+      onModeChange: ({ mode }) => {
+        setIsSpeaking(mode === "speaking");
+      },
+      onMessage: (message) => {
+        console.log(message);
+      },
+    });
+    setConversation(conv);
+  }
+
+  async function endConversation() {
+    if (!conversation) {
+      return;
+    }
     await conversation.endSession();
-    setIsRecording(false);
-  };
-
-  const handleClick = () => {
-    if (isRecording) {
-      stopConversation();
-    } else {
-      startConversation();
-    }
-  };
+    setConversation(null);
+  }
 
   return (
     <div className="relative w-[500px] h-[500px] rounded-full">
@@ -204,24 +226,38 @@ export default function VoiceVisualization() {
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <Button
-          onClick={handleClick}
+          onClick={startConversation}
           variant="secondary"
+          disabled={conversation !== null && isConnected}
           className={`
               px-6 py-2 gap-2 rounded-full bg-white/90 hover:bg-white 
               transition-all duration-300 shadow-lg
-              ${isRecording ? "text-red-500" : "text-zinc-800"}
+              ${isConnected ? "text-red-500" : "text-zinc-800"}
             `}
         >
-          {isRecording ? (
+          {isConnected ? (
             <Square className="w-4 h-4" />
           ) : (
             <Mic className="w-4 h-4" />
           )}
-          {isRecording ? "Stop" : "Start Conversation"}
+          Start Conversation
+        </Button>
+        <Button
+          onClick={endConversation}
+          variant="secondary"
+          disabled={conversation === null && !isConnected}
+          className={`
+              px-6 py-2 gap-2 rounded-full bg-white/90 hover:bg-white 
+              transition-all duration-300 shadow-lg
+            `}
+        >
+          End Conversation
         </Button>
         <div className="text-white text-sm">
-          {conversation.status === "connected" && (
-            <p>Agent is {conversation.isSpeaking ? "speaking" : "listening"}</p>
+          {isConnected ? (
+            <p>Agent is {isSpeaking ? "speaking" : "listening"}</p>
+          ) : (
+            <p>Disconnected</p>
           )}
         </div>
       </div>
