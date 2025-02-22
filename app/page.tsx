@@ -1,5 +1,7 @@
 "use client";
 
+import { UserProvider, useUser } from "@/contexts/UserContext";
+import { Onboarding } from "@/components/Onboarding";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -8,7 +10,13 @@ import {
 import VoiceVisualization from "@/components/VoiceWaves";
 import { MessageList } from "@/components/MessageList";
 
-export default function Home() {
+function MainContent() {
+  const { userInfo } = useUser();
+
+  if (!userInfo) {
+    return <Onboarding />;
+  }
+
   return (
     <ResizablePanelGroup
       direction="horizontal"
@@ -26,5 +34,13 @@ export default function Home() {
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
+  );
+}
+
+export default function Home() {
+  return (
+    <UserProvider>
+      <MainContent />
+    </UserProvider>
   );
 }
