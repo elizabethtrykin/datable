@@ -3,8 +3,9 @@
 import { useRef, useState } from "react";
 import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
 import { Button } from "@/components/ui/button";
-import { Mic } from "lucide-react";
+import { Mic, Square } from "lucide-react";
 import * as THREE from "three";
+import { useConversation } from "@11labs/react";
 
 extend(THREE);
 
@@ -155,8 +156,43 @@ function GradientBackground() {
 export default function VoiceVisualization() {
   const [isRecording, setIsRecording] = useState(false);
 
+  const conversation = useConversation({
+    onConnect: () => console.log("Connected"),
+    onDisconnect: () => {
+      console.log("Disconnected");
+      setIsRecording(false);
+    },
+    onMessage: (message) => console.log("Message:", message),
+    onError: (error) => {
+      console.error("Error:", error);
+      setIsRecording(false);
+    },
+  });
+
+  const startConversation = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      await conversation.startSession({
+        agentId: process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID,
+      });
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Failed to start conversation:", error);
+      setIsRecording(false);
+    }
+  };
+
+  const stopConversation = async () => {
+    await conversation.endSession();
+    setIsRecording(false);
+  };
+
   const handleClick = () => {
-    setIsRecording(!isRecording);
+    if (isRecording) {
+      stopConversation();
+    } else {
+      startConversation();
+    }
   };
 
   return (
@@ -166,7 +202,7 @@ export default function VoiceVisualization() {
           <GradientBackground />
         </Canvas>
       </div>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <Button
           onClick={handleClick}
           variant="secondary"
@@ -176,9 +212,18 @@ export default function VoiceVisualization() {
               ${isRecording ? "text-red-500" : "text-zinc-800"}
             `}
         >
-          <Mic className="w-4 h-4" />
-          {isRecording ? "Recording..." : "Try a call"}
+          {isRecording ? (
+            <Square className="w-4 h-4" />
+          ) : (
+            <Mic className="w-4 h-4" />
+          )}
+          {isRecording ? "Stop" : "Start Conversation"}
         </Button>
+        <div className="text-white text-sm">
+          {conversation.status === "connected" && (
+            <p>Agent is {conversation.isSpeaking ? "speaking" : "listening"}</p>
+          )}
+        </div>
       </div>
     </div>
   );
