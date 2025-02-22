@@ -20,7 +20,9 @@ export type Profile = {
     text: string;
   } | null;
   linkedin_data: any | null;
-  website_data: any | null;
+  website_data: {
+    text: string;
+  } | null;
   other_links_data: any[] | null;
   processing_status: 'pending' | 'processing' | 'completed' | 'failed';
   error_message?: string;

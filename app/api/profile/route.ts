@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseConfig';
 import Exa from 'exa-js';
-import { fetchTwitterData, isValidTwitterHandle, isValidUrl } from '@/lib/utils';
+import { 
+  fetchTwitterData, 
+  fetchLinkedInData, 
+  fetchWebsiteData, 
+  fetchOtherLinkData,
+  isValidTwitterHandle, 
+  isValidUrl 
+} from '@/lib/utils';
 
 const exa = new Exa(process.env.EXA_API_KEY as string);
 
@@ -68,28 +75,59 @@ export async function POST(req: NextRequest) {
       profile = data;
     }
 
-    // Only fetch Twitter data if handle is provided
-    if (twitter_handle) {
-      try {
-        const twitterData = await fetchTwitterData(twitter_handle, exa);
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            twitter_data: twitterData,
-            processing_status: 'completed'
-          })
-          .eq('id', profile.id);
+    // Fetch all available data
+    try {
+      const updates: any = { processing_status: 'completed' };
 
-        if (updateError) throw updateError;
-      } catch (error) {
-        await supabase
-          .from('profiles')
-          .update({
-            processing_status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Failed to fetch Twitter data'
-          })
-          .eq('id', profile.id);
+      // Fetch data in parallel
+      const fetchPromises = [];
+      
+      if (twitter_handle) {
+        fetchPromises.push(
+          fetchTwitterData(twitter_handle, exa)
+            .then(data => { updates.twitter_data = data; })
+        );
       }
+
+      if (linkedin_url) {
+        fetchPromises.push(
+          fetchLinkedInData(linkedin_url, exa)
+            .then(data => { updates.linkedin_data = data; })
+        );
+      }
+
+      if (personal_website) {
+        fetchPromises.push(
+          fetchWebsiteData(personal_website, exa)
+            .then(data => { updates.website_data = data; })
+        );
+      }
+
+      if (other_links?.length) {
+        fetchPromises.push(
+          Promise.all(
+            other_links.map((url: string) => fetchOtherLinkData(url, exa))
+          ).then(data => { updates.other_links_data = data; })
+        );
+      }
+
+      // Wait for all fetches to complete
+      await Promise.all(fetchPromises);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+    } catch (error) {
+      await supabase
+        .from('profiles')
+        .update({
+          processing_status: 'failed',
+          error_message: error instanceof Error ? error.message : 'Failed to fetch profile data'
+        })
+        .eq('id', profile.id);
     }
 
     return NextResponse.json({

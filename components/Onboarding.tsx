@@ -66,7 +66,7 @@ export function Onboarding() {
         },
         body: JSON.stringify({
           twitter_handle: formData.twitterHandle?.trim() || null,
-          linkedin_url: formData.linkedinHandle ? `https://linkedin.com/in/${formData.linkedinHandle.trim()}` : null,
+          linkedin_url: formData.linkedinHandle ? `https://www.linkedin.com/in/${formData.linkedinHandle.trim()}/` : null,
           personal_website: formData.personalWebsite?.trim() || null,
           other_links: formData.otherLinks?.map(link => link.trim()) || null
         }),
