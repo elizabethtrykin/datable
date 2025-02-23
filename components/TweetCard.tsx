@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Icons } from "./ui/icons";
-import { Heart } from "lucide-react";
+import { Heart, User } from "lucide-react";
 
 interface TweetMessage {
   username: string;
@@ -25,7 +25,9 @@ export function TweetCard({ message }: { message: TweetMessage }) {
       </div>
       <div className="bg-white rounded-lg p-4 shadow-sm border hover:shadow-md transition-shadow">
         <div className="flex items-center mb-2 relative">
-          <div className="h-10 w-10 rounded-full bg-gray-200" />
+          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+            <User className="h-6 w-6 text-gray-500" />
+          </div>
           <div className="ml-3">
             <div className="font-bold text-gray-900">{message.username}</div>
             <div className="text-gray-500 text-sm">{message.handle}</div>

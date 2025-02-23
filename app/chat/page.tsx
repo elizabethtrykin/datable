@@ -13,7 +13,7 @@ import { useMatchedPerson } from "@/contexts/MatchedPersonContext";
 import { Button } from "@/components/ui/button";
 import { Heart, X } from "lucide-react";
 import { Icons } from "@/components/ui/icons";
-
+import { motion } from "framer-motion";
 export default function ChatPage() {
   const { messages, showMatchContactInfo } = useMessages();
   const {
@@ -29,30 +29,42 @@ export default function ChatPage() {
   useEffect(() => {
     const storedUserData = localStorage.getItem("userData");
 
-    console.log("stored user data", storedUserData);
     if (storedUserData) {
       setProfileData(JSON.parse(storedUserData));
     }
-    console.log("finding match");
     findMatch();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  console.log("isAwaitingMatch", isAwaitingMatch);
-  console.log("matchedPersonData", matchedPersonData);
-  console.log("profileData", profileData);
-  if (isAwaitingMatch || !matchedPersonData || !profileData) {
-    console.log("isAwaitingMatch", isAwaitingMatch);
-    console.log("matchedPersonData", matchedPersonData);
-    console.log("profileData", profileData);
+  if (!profileData) {
+    return null;
+  }
+
+  if (isAwaitingMatch || !matchedPersonData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center flex items-center justify-center flex-col gap-2">
           <h2 className="text-5xl font-bold mb-4">
-            Hey {profileData?.firstName || "there"},
+            Hey {profileData.firstName},
           </h2>
           <div className="flex items-center gap-2">
             <span>finding your perfect match</span>
-            <Icons.spinner />
+            <div className="flex gap-1">
+              {[0, 1, 2].map((index) => (
+                <motion.div
+                  key={index}
+                  className="w-1.5 h-1.5 bg-black rounded-full"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.5,
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                    delay: index * 0.2,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
