@@ -34,7 +34,7 @@ export function Onboarding() {
     );
 
     // Create profile for both genders
-    await fetch("/api/profile", {
+    const response = await fetch("/api/profile", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,6 +50,21 @@ export function Onboarding() {
           updatedData.otherLinks?.map((link) => link.trim()) || null,
       }),
     });
+
+    const result = await response.json();
+
+    // If female profile, get matches
+    if (updatedData.gender === 'female' && result.profile_id) {
+      const matchResponse = await fetch(`/api/match?profile_id=${result.profile_id}`);
+      const { matches, topMatchData, profileData } = await matchResponse.json();
+      
+      // Store all the context data
+      localStorage.setItem('matches', JSON.stringify(matches));
+      localStorage.setItem('conversationContext', JSON.stringify({
+        female: profileData,
+        male: topMatchData
+      }));
+    }
 
     setFormData(updatedData);
     setShowSuccess(true);

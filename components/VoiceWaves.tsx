@@ -193,9 +193,34 @@ export default function VoiceVisualization() {
       return;
     }
     const signedUrl = await getSignedUrl();
+    const contextData = JSON.parse(localStorage.getItem('conversationContext') || '{}');
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    const systemPrompt = `
+You are a dating assistant helping facilitate a conversation between two people who have been matched based on their online presence.
+
+Female Profile Context:
+${contextData.female?.stringified_data || 'No data available'}
+
+Male Profile Context:
+${contextData.male?.stringified_data || 'No data available'}
+
+Your role is to help guide the conversation naturally, using the context from both profiles to suggest relevant topics and make connections between their interests and experiences. Keep the conversation engaging and respectful.
+
+The female user (${userData.firstName || 'the user'}) is the one speaking with you. Help her learn more about her match based on his profile data.
+    `.trim();
+
     const conv = await Conversation.startSession({
       signedUrl: signedUrl,
       preferHeadphonesForIosDevices: true,
+      overrides: {
+        agent: {
+          prompt: {
+            prompt: systemPrompt
+          },
+          firstMessage: `Hi ${userData.firstName || 'there'}! I've analyzed both profiles and found some interesting connections. Would you like me to tell you more about your match?`,
+          language: "en"
+        }
+      },
       onConnect: () => {
         setIsConnected(true);
         setIsSpeaking(true);
