@@ -22,19 +22,17 @@ const fragmentShader = `
   
   varying vec2 vUv;
   
-  //	Classic Perlin 3D Noise 
-  //	by Stefan Gustavson
   vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
   vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
   vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
   
   float noise(vec3 P){
-    vec3 Pi0 = floor(P); // Integer part for indexing
-    vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
+    vec3 Pi0 = floor(P);
+    vec3 Pi1 = Pi0 + vec3(1.0);
     Pi0 = mod(Pi0, 289.0);
     Pi1 = mod(Pi1, 289.0);
-    vec3 Pf0 = fract(P); // Fractional part for interpolation
-    vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+    vec3 Pf0 = fract(P);
+    vec3 Pf1 = Pf0 - vec3(1.0);
     vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
     vec4 iy = vec4(Pi0.yy, Pi1.yy);
     vec4 iz0 = Pi0.zzzz;
@@ -97,21 +95,19 @@ const fragmentShader = `
   }
 
   void main() {
-    // Create circular mask with crisp edges
     vec2 center = vUv - 0.5;
     float dist = length(center);
     
-    // Very thin smooth border for antialiasing
     float radius = 0.25;
-    float smoothEdge = 0.001; // Much smaller value for sharper edge
+    float smoothEdge = 0.001;
     float alpha = 1.0 - smoothstep(radius - smoothEdge, radius + smoothEdge, dist);
     
     if (dist > radius + smoothEdge) {
       discard;
     }
     
-    float n = noise(vec3(vUv * 3.0, uTime * 0.5));
-    vec3 color = mix(uColorA, uColorB, n * 0.5 + 0.5);
+    float n = noise(vec3(vUv * 5.0, uTime * 2.0));
+    vec3 color = mix(uColorA, uColorB, n * 0.7 + 0.3);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -125,31 +121,26 @@ const vertexShader = `
   }
 `;
 
-function GradientBackground() {
+function GradientBackground({ isConnected }: { isConnected: boolean }) {
   const meshRef = useRef();
   const materialRef = useRef();
   const { clock } = useThree();
 
   useFrame(() => {
-    if (materialRef.current) {
-      // @ts-expect-error idc rn
+    if (materialRef.current && isConnected) {
       materialRef.current.uniforms.uTime.value = clock.getElapsedTime();
     }
   });
-
-  const uniforms = {
+  const uniforms = useRef({
     uTime: { value: 0 },
-    uColorA: { value: new THREE.Color("#ff9a9e").convertSRGBToLinear() },
-    uColorB: { value: new THREE.Color("#57c84d").convertSRGBToLinear() },
-  };
+    uColorA: { value: new THREE.Color("#e6f3ff").convertSRGBToLinear() },
+    uColorB: { value: new THREE.Color("#b5d8ff").convertSRGBToLinear() },
+  }).current;
 
   return (
-    // @ts-expect-error idc rn
     <mesh ref={meshRef} scale={[4, 4, 1]}>
-      <planeGeometry args={[2, 2, 128, 128]} />{" "}
-      {/* Increased geometry resolution */}
+      <planeGeometry args={[2, 2, 128, 128]} />
       <shaderMaterial
-        // @ts-expect-error idc rn
         ref={materialRef}
         fragmentShader={fragmentShader}
         vertexShader={vertexShader}
@@ -158,6 +149,14 @@ function GradientBackground() {
     </mesh>
   );
 }
+
+const CanvasWrapper = ({ isConnected }: { isConnected: boolean }) => {
+  return (
+    <Canvas>
+      <GradientBackground isConnected={isConnected} />
+    </Canvas>
+  );
+};
 
 export default function VoiceVisualization() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -332,9 +331,7 @@ ${contextData.male?.stringified_data || "No data available"}
   return (
     <div className="relative w-[500px] h-[500px] rounded-full">
       <div className="absolute inset-0 rounded-full overflow-hidden">
-        <Canvas>
-          <GradientBackground />
-        </Canvas>
+        <CanvasWrapper isConnected={isConnected} />
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <motion.div

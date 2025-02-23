@@ -20,6 +20,10 @@ interface MatchedPersonContextType {
   isAwaitingMatch: boolean;
   setIsAwaitingMatch: (isAwaiting: boolean) => void;
   findMatch: () => Promise<void>;
+  profileData: Profile | null;
+  setProfileData: (data: Profile | null) => void;
+  matches: Profile[];
+  setMatches: (matches: Profile[]) => void;
 }
 
 const MatchedPersonContext = createContext<

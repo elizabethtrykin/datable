@@ -16,7 +16,8 @@ import { Icons } from "@/components/ui/icons";
 
 export default function ChatPage() {
   const { messages } = useMessages();
-  const { matchedPersonData, isAwaitingMatch, findMatch } = useMatchedPerson();
+  const { matchedPersonData, isAwaitingMatch, findMatch, profileData } =
+    useMatchedPerson();
 
   console.log("matched person data ", matchedPersonData);
   const [userData, setUserData] = useState<{ firstName: string } | null>(null);
@@ -31,10 +32,10 @@ export default function ChatPage() {
     findMatch();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (isAwaitingMatch || !matchedPersonData) {
+  if (isAwaitingMatch || !matchedPersonData || !profileData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+        <div className="text-center flex items-center justify-center flex-col gap-2">
           <h2 className="text-5xl font-bold mb-4">
             Hey {userData?.firstName || "there"},
           </h2>
