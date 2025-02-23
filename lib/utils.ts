@@ -33,7 +33,8 @@ export async function fetchTwitterData(handle: string, exa: Exa, retries = 0): P
       await sleep(RETRY_DELAY);
       return fetchTwitterData(handle, exa, retries + 1);
     }
-    throw error;
+    console.error(`Failed to fetch Twitter data after ${MAX_RETRIES} retries:`, error);
+    return null;
   }
 }
 
@@ -60,7 +61,8 @@ export async function fetchLinkedInData(url: string, exa: Exa, retries = 0): Pro
       await sleep(RETRY_DELAY);
       return fetchLinkedInData(url, exa, retries + 1);
     }
-    throw error;
+    console.error(`Failed to fetch LinkedIn data after ${MAX_RETRIES} retries:`, error);
+    return null;
   }
 }
 
@@ -88,7 +90,8 @@ export async function fetchWebsiteData(url: string, exa: Exa, retries = 0): Prom
       await sleep(RETRY_DELAY);
       return fetchWebsiteData(url, exa, retries + 1);
     }
-    throw error;
+    console.error(`Failed to fetch website data after ${MAX_RETRIES} retries:`, error);
+    return null;
   }
 }
 
@@ -114,7 +117,8 @@ export async function fetchOtherLinkData(url: string, exa: Exa, retries = 0): Pr
       await sleep(RETRY_DELAY);
       return fetchOtherLinkData(url, exa, retries + 1);
     }
-    throw error;
+    console.error(`Failed to fetch other link data after ${MAX_RETRIES} retries:`, error);
+    return null;
   }
 }
 

@@ -64,6 +64,14 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.similarity - a.similarity) // Sort by similarity descending
       .slice(0, 3); // Get top 3 matches
 
+    // Check if we have any matches
+    if (matches.length === 0) {
+      return NextResponse.json({
+        matches: [],
+        message: "No male profiles found for matching",
+      });
+    }
+
     // Separate the full data for the top match from the other match IDs
     const [topMatch, ...otherMatches] = matches;
 

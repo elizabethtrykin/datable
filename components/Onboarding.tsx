@@ -56,20 +56,30 @@ export function Onboarding() {
 
     // If female profile, get matches
     if (updatedData.gender === "female" && result.profile_id) {
-      const matchResponse = await fetch(
-        `/api/match?profile_id=${result.profile_id}`
-      );
-      const { matches, topMatchData, profileData } = await matchResponse.json();
+      const matchResponse = await fetch(`/api/match?profile_id=${result.profile_id}`);
+      const matchData = await matchResponse.json();
 
-      // Store all the context data
-      localStorage.setItem("matches", JSON.stringify(matches));
-      localStorage.setItem(
-        "conversationContext",
-        JSON.stringify({
-          female: profileData,
-          male: topMatchData,
-        })
-      );
+      if (matchData.matches?.length > 0) {
+        // Store all the context data
+        localStorage.setItem("matches", JSON.stringify(matchData.matches));
+        localStorage.setItem(
+          "conversationContext",
+          JSON.stringify({
+            female: matchData.profileData,
+            male: matchData.topMatchData,
+          })
+        );
+      } else {
+        console.log("No matches found:", matchData.message);
+        localStorage.setItem("matches", JSON.stringify([]));
+        localStorage.setItem(
+          "conversationContext",
+          JSON.stringify({
+            female: { profile_id: result.profile_id },
+            male: null,
+          })
+        );
+      }
     }
 
     setFormData(updatedData);

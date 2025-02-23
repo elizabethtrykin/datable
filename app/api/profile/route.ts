@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     let profile;
     if (existingProfile) {
-      // Update existing profile
+      // Update existing profile - reset all fields to ensure complete override
       const { data, error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -67,7 +67,14 @@ export async function POST(req: NextRequest) {
           linkedin_url: linkedin_url || null,
           personal_website: personal_website || null,
           other_links: other_links || null,
-          processing_status: 'pending'
+          twitter_data: null,
+          linkedin_data: null,
+          website_data: null,
+          other_links_data: null,
+          embedding: null,
+          stringified_data: null,
+          processing_status: 'pending',
+          error_message: null
         })
         .eq('id', existingProfile.id)
         .select()
@@ -106,8 +113,10 @@ export async function POST(req: NextRequest) {
         fetchPromises.push(
           fetchTwitterData(twitter_handle, exa)
             .then(data => { 
-              updates.twitter_data = data;
-              allData.twitter = data;
+              if (data) {
+                updates.twitter_data = data;
+                allData.twitter = data;
+              }
             })
         );
       }
@@ -116,8 +125,10 @@ export async function POST(req: NextRequest) {
         fetchPromises.push(
           fetchLinkedInData(linkedin_url, exa)
             .then(data => { 
-              updates.linkedin_data = data;
-              allData.linkedin = data;
+              if (data) {
+                updates.linkedin_data = data;
+                allData.linkedin = data;
+              }
             })
         );
       }
@@ -126,8 +137,10 @@ export async function POST(req: NextRequest) {
         fetchPromises.push(
           fetchWebsiteData(personal_website, exa)
             .then(data => { 
-              updates.website_data = data;
-              allData.website = data;
+              if (data) {
+                updates.website_data = data;
+                allData.website = data;
+              }
             })
         );
       }
@@ -136,9 +149,12 @@ export async function POST(req: NextRequest) {
         fetchPromises.push(
           Promise.all(
             other_links.map((url: string) => fetchOtherLinkData(url, exa))
-          ).then(data => { 
-            updates.other_links_data = data;
-            allData.other_links = data;
+          ).then(dataArray => { 
+            const validData = dataArray.filter(data => data !== null);
+            if (validData.length > 0) {
+              updates.other_links_data = validData;
+              allData.other_links = validData;
+            }
           })
         );
       }
@@ -146,22 +162,28 @@ export async function POST(req: NextRequest) {
       // Wait for all fetches to complete
       await Promise.all(fetchPromises);
 
-      // Create a formatted text representation of all data
-      const formattedData = formatProfileData({
-        gender,
-        twitter_handle,
-        linkedin_url,
-        personal_website,
-        other_links,
-        twitter_data: allData.twitter,
-        linkedin_data: allData.linkedin,
-        website_data: allData.website,
-        other_links_data: allData.other_links
-      });
+      // Only proceed with embedding if we have any data
+      if (Object.keys(allData).length > 0) {
+        // Create a formatted text representation of all data
+        const formattedData = formatProfileData({
+          gender,
+          twitter_handle,
+          linkedin_url,
+          personal_website,
+          other_links,
+          twitter_data: allData.twitter,
+          linkedin_data: allData.linkedin,
+          website_data: allData.website,
+          other_links_data: allData.other_links
+        });
 
-      // Generate embedding from the formatted data
-      updates.embedding = await generateEmbedding(formattedData);
-      updates.stringified_data = formattedData;
+        // Generate embedding from the formatted data
+        updates.embedding = await generateEmbedding(formattedData);
+        updates.stringified_data = formattedData;
+      } else {
+        updates.processing_status = 'failed';
+        updates.error_message = 'No social data could be fetched';
+      }
 
       const { error: updateError } = await supabase
         .from('profiles')
