@@ -16,10 +16,13 @@ import { Icons } from "@/components/ui/icons";
 
 export default function ChatPage() {
   const { messages } = useMessages();
-  const { matchedPersonData, isAwaitingMatch, findMatch, profileData } =
-    useMatchedPerson();
-
-  const [userData, setUserData] = useState<{ firstName: string } | null>(null);
+  const {
+    matchedPersonData,
+    isAwaitingMatch,
+    findMatch,
+    profileData,
+    setProfileData,
+  } = useMatchedPerson();
 
   const canPerformEarlyAction = messages.length > 0;
 
@@ -28,12 +31,15 @@ export default function ChatPage() {
 
     console.log("stored user data", storedUserData);
     if (storedUserData) {
-      setUserData(JSON.parse(storedUserData));
+      setProfileData(JSON.parse(storedUserData));
     }
     console.log("finding match");
     findMatch();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  console.log("isAwaitingMatch", isAwaitingMatch);
+  console.log("matchedPersonData", matchedPersonData);
+  console.log("profileData", profileData);
   if (isAwaitingMatch || !matchedPersonData || !profileData) {
     console.log("isAwaitingMatch", isAwaitingMatch);
     console.log("matchedPersonData", matchedPersonData);
@@ -42,7 +48,7 @@ export default function ChatPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center flex items-center justify-center flex-col gap-2">
           <h2 className="text-5xl font-bold mb-4">
-            Hey {userData?.firstName || "there"},
+            Hey {profileData?.firstName || "there"},
           </h2>
           <div className="flex items-center gap-2">
             <span>finding your perfect match</span>
