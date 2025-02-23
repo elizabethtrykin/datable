@@ -11,7 +11,7 @@ export function MessageList() {
   console.log("All Messages:", messages);
 
   return (
-    <div className="space-y-4 p-4 w-full min-w-full">
+    <div className="space-y-4 p-4 w-full min-w-full justify-center">
       {messages.length === 0 ? (
         <EmptyMessageState />
       ) : (
