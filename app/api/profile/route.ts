@@ -8,7 +8,8 @@ import {
   fetchWebsiteData, 
   fetchOtherLinkData,
   isValidTwitterHandle, 
-  isValidUrl 
+  isValidUrl,
+  formatProfileData 
 } from '@/lib/utils';
 
 const exa = new Exa(process.env.EXA_API_KEY as string);
@@ -145,17 +146,22 @@ export async function POST(req: NextRequest) {
       // Wait for all fetches to complete
       await Promise.all(fetchPromises);
 
-      // Create a text representation of all data for embedding
-      const textForEmbedding = `
-        ${allData.twitter ? `Twitter Profile: ${JSON.stringify(allData.twitter)}` : ''}
-        ${allData.linkedin ? `LinkedIn Profile: ${JSON.stringify(allData.linkedin)}` : ''}
-        ${allData.website ? `Personal Website: ${JSON.stringify(allData.website)}` : ''}
-        ${allData.other_links ? `Other Links: ${JSON.stringify(allData.other_links)}` : ''}
-      `.trim();
+      // Create a formatted text representation of all data
+      const formattedData = formatProfileData({
+        gender,
+        twitter_handle,
+        linkedin_url,
+        personal_website,
+        other_links,
+        twitter_data: allData.twitter,
+        linkedin_data: allData.linkedin,
+        website_data: allData.website,
+        other_links_data: allData.other_links
+      });
 
-      // Generate embedding and update profile with both stringified data and embedding
-      updates.embedding = await generateEmbedding(textForEmbedding);
-      updates.stringified_data = textForEmbedding;
+      // Generate embedding from the formatted data
+      updates.embedding = await generateEmbedding(formattedData);
+      updates.stringified_data = formattedData;
 
       const { error: updateError } = await supabase
         .from('profiles')
