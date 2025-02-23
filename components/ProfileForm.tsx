@@ -48,91 +48,104 @@ export function ProfileForm({ gender, onSubmit }: ProfileFormProps) {
 
   // Fetch links from Exa and categorize them
   const fetchExaLinks = async (name: string) => {
-    try {
-      // Separate searches for different platforms
-      const [twitterResult, linkedinResult, generalResult] = await Promise.all([
-        // Twitter/X.com search
-        exa.search(name, {
-          includeDomains: ["x.com"],
+    // Individual API calls with error handling
+    const twitterResult = await (async () => {
+      try {
+        return await exa.search(name, {
+          includeDomains: ["x.com", "twitter.com"],
           numResults: 10
-        }),
-        // LinkedIn search
-        exa.search(name, {
+        });
+      } catch (err) {
+        console.error("Twitter search failed:", err);
+        return { results: [] };
+      }
+    })();
+
+    const linkedinResult = await (async () => {
+      try {
+        return await exa.search(name, {
           includeDomains: ["linkedin.com"],
           numResults: 10
-        }),
-        // General search for personal websites
-        exa.search(name, {
-          excludeDomains: ["x.com", "linkedin.com"],
+        });
+      } catch (err) {
+        console.error("LinkedIn search failed:", err);
+        return { results: [] };
+      }
+    })();
+
+    const generalResult = await (async () => {
+      try {
+        return await exa.search(name, {
+          excludeDomains: ["x.com", "linkedin.com", "instagram.com", "facebook.com"],
           numResults: 10
-        })
-      ]);
-
-      const twitterSuggestions: Suggestion[] = [];
-      const linkedinSuggestions: Suggestion[] = [];
-      const websiteSuggestions: Suggestion[] = [];
-
-      // Process Twitter results - only use first valid result
-      const twitterItem = (twitterResult.results || []).find((item: any) => {
-        const url = item.url;
-        return url && !url.includes("/status/") && 
-               url.split('x.com/')[1]?.split(/[/?#]/)[0] &&
-               !['home', 'search'].includes(url.split('x.com/')[1]?.split(/[/?#]/)[0] || '');
-      });
-
-      if (twitterItem) {
-        const handle = twitterItem.url.split('x.com/')[1]?.split(/[/?#]/)[0];
-        console.log('Found Twitter URL:', twitterItem.url);
-        console.log('Extracted handle:', handle);
-        
-        twitterSuggestions.push({ 
-          value: handle.replace(/^@/, ''),
-          confidence: 0.9, 
-          title: twitterItem.title || `@${handle} on Twitter`
         });
+      } catch (err) {
+        console.error("General search failed:", err);
+        return { results: [] };
       }
+    })();
 
-      // Process LinkedIn results - only use first valid result
-      const linkedinItem = (linkedinResult.results || []).find((item: any) => {
-        const url = item.url;
-        return url && url.includes("linkedin.com/in/") &&
-               url.split("linkedin.com/in/")[1]?.split(/[/?#]/)[0];
+    const twitterSuggestions: Suggestion[] = [];
+    const linkedinSuggestions: Suggestion[] = [];
+    const websiteSuggestions: Suggestion[] = [];
+
+    // Process Twitter results - only use first valid result
+    const twitterItem = (twitterResult.results || []).find((item: any) => {
+      const url = item.url;
+      return url && !url.includes("/status/") && 
+             url.split('x.com/')[1]?.split(/[/?#]/)[0] &&
+             !['home', 'search'].includes(url.split('x.com/')[1]?.split(/[/?#]/)[0] || '');
+    });
+
+    if (twitterItem) {
+      const handle = twitterItem.url.split('x.com/')[1]?.split(/[/?#]/)[0];
+      console.log('Found Twitter URL:', twitterItem.url);
+      console.log('Extracted handle:', handle);
+      
+      twitterSuggestions.push({ 
+        value: handle.replace(/^@/, ''),
+        confidence: 0.9, 
+        title: twitterItem.title || `@${handle} on Twitter`
       });
-
-      if (linkedinItem) {
-        const handle = linkedinItem.url.split("linkedin.com/in/")[1]?.split(/[/?#]/)[0] || "";
-        console.log('Found LinkedIn URL:', linkedinItem.url);
-        console.log('Extracted LinkedIn handle:', handle);
-        
-        if (handle && !handle.includes('/')) {
-          linkedinSuggestions.push({ 
-            value: handle,
-            confidence: 0.9,
-            title: linkedinItem.title || `${handle} on LinkedIn`
-          });
-        }
-      }
-
-      // Process general results - only use first valid result
-      const websiteItem = (generalResult.results || [])[0];
-      if (websiteItem) {
-        websiteSuggestions.push({ 
-          value: websiteItem.url, 
-          confidence: 0.7, 
-          title: websiteItem.title || websiteItem.url
-        });
-        console.log('Found personal website:', websiteItem.url);
-      }
-
-      return {
-        twitter: twitterSuggestions,
-        linkedin: linkedinSuggestions,
-        website: websiteSuggestions,
-      };
-    } catch (err) {
-      console.error("Exa API error:", err);
-      return { twitter: [], linkedin: [], website: [] };
     }
+
+    // Process LinkedIn results - only use first valid result
+    const linkedinItem = (linkedinResult.results || []).find((item: any) => {
+      const url = item.url;
+      return url && url.includes("linkedin.com/in/") &&
+             url.split("linkedin.com/in/")[1]?.split(/[/?#]/)[0];
+    });
+
+    if (linkedinItem) {
+      const handle = linkedinItem.url.split("linkedin.com/in/")[1]?.split(/[/?#]/)[0] || "";
+      console.log('Found LinkedIn URL:', linkedinItem.url);
+      console.log('Extracted LinkedIn handle:', handle);
+      
+      if (handle && !handle.includes('/')) {
+        linkedinSuggestions.push({ 
+          value: handle,
+          confidence: 0.9,
+          title: linkedinItem.title || `${handle} on LinkedIn`
+        });
+      }
+    }
+
+    // Process general results - only use first valid result
+    const websiteItem = (generalResult.results || [])[0];
+    if (websiteItem) {
+      websiteSuggestions.push({ 
+        value: websiteItem.url, 
+        confidence: 0.7, 
+        title: websiteItem.title || websiteItem.url
+      });
+      console.log('Found personal website:', websiteItem.url);
+    }
+
+    return {
+      twitter: twitterSuggestions,
+      linkedin: linkedinSuggestions,
+      website: websiteSuggestions,
+    };
   };
 
   const formatTwitterHandle = (input: string): string => {
