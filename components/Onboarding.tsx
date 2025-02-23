@@ -36,7 +36,7 @@ export function Onboarding() {
     );
 
     if (updatedData.gender === "male") {
-      const response = await fetch("/api/profile", {
+      fetch("/api/profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -51,11 +51,6 @@ export function Onboarding() {
             updatedData.otherLinks?.map((link) => link.trim()) || null,
         }),
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create profile");
-      }
     }
 
     setFormData(updatedData);
