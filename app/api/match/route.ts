@@ -4,9 +4,9 @@ import { supabase } from "@/lib/supabaseConfig";
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
   console.log("Calculating similarity between vectors:", {
     vecALength: vecA?.length,
-    vecBLength: vecB?.length
+    vecBLength: vecB?.length,
   });
-  
+
   if (!vecA || !vecB) {
     console.log("Received null vector", { vecA, vecB });
     return 0;
@@ -14,15 +14,15 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   const dotProduct = vecA.reduce((acc, val, i) => acc + val * vecB[i], 0);
   const magnitudeA = Math.sqrt(vecA.reduce((acc, val) => acc + val * val, 0));
   const magnitudeB = Math.sqrt(vecB.reduce((acc, val) => acc + val * val, 0));
-  
+
   const similarity = dotProduct / (magnitudeA * magnitudeB);
   console.log("Similarity calculation results:", {
     dotProduct,
     magnitudeA,
     magnitudeB,
-    similarity
+    similarity,
   });
-  
+
   return similarity;
 }
 
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     console.log("Female profile fetch result:", {
       hasEmbedding: !!femaleProfile?.embedding,
       hasStringifiedData: !!femaleProfile?.stringified_data,
-      error: femaleError
+      error: femaleError,
     });
 
     if (femaleError || !femaleProfile) {
@@ -81,7 +81,9 @@ export async function GET(req: NextRequest) {
       throw maleError;
     }
 
-    console.log(`Found ${maleProfiles?.length || 0} male profiles with embeddings`);
+    console.log(
+      `Found ${maleProfiles?.length || 0} male profiles with embeddings`
+    );
 
     console.log("Calculating similarity scores");
     const matches = maleProfiles
@@ -103,6 +105,7 @@ export async function GET(req: NextRequest) {
         );
         return {
           profile_id: profile.id,
+          twitter_handle: profile.twitter_handle,
           similarity,
           stringified_data: profile.stringified_data,
         };
@@ -112,7 +115,7 @@ export async function GET(req: NextRequest) {
 
     console.log(
       "Top 3 matches:",
-      matches.map(m => ({ id: m.profile_id, score: m.similarity }))
+      matches.map((m) => ({ id: m.profile_id, score: m.similarity }))
     );
 
     // Check if we have any matches
@@ -127,16 +130,19 @@ export async function GET(req: NextRequest) {
     // Separate the full data for the top match from the other match IDs
     const [topMatch, ...otherMatches] = matches;
 
+    console.log("topMatch", topMatch);
+
     console.log("Preparing response with top match:", {
       topMatchId: topMatch.profile_id,
       topMatchScore: topMatch.similarity,
-      otherMatchIds: otherMatches.map(m => m.profile_id)
+      otherMatchIds: otherMatches.map((m) => m.profile_id),
     });
 
     return NextResponse.json({
       matches: matches.map((m) => m.profile_id),
       topMatchData: {
         profile_id: topMatch.profile_id,
+        twitter_handle: topMatch?.twitter_handle,
         stringified_data: topMatch.stringified_data,
       },
       profileData: {

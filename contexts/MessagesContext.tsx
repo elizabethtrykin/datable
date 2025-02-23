@@ -15,7 +15,7 @@ const MessagesContext = createContext<MessagesContextType | undefined>(
 );
 
 export function MessagesProvider({ children }: { children: ReactNode }) {
-  const { profileData } = useMatchedPerson();
+  const { profileData, matchedPersonData } = useMatchedPerson();
   const [messages, setMessages] = useState<Message[]>([]);
 
   const addMessage = (message: Message) => {
@@ -29,9 +29,9 @@ export function MessagesProvider({ children }: { children: ReactNode }) {
     addMessage({
       id: "uuaiuhdiuahdiuahiudha",
       type: "profile",
-      content: `Here is the contact info for the person you matched with: ${profileData?.firstName} ${profileData?.lastName}`,
-      url: `https://x.com/${profileData?.twitter_handle}`,
-      username: profileData?.twitter_handle || "",
+      content: `Here is the contact info for the person you matched with: ${matchedPersonData?.firstName} ${matchedPersonData?.lastName}`,
+      url: `https://x.com/${matchedPersonData?.twitter_handle}`,
+      username: matchedPersonData?.twitter_handle || "",
     });
   };
 
