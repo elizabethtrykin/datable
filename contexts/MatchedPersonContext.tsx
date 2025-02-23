@@ -12,6 +12,7 @@ interface Profile {
   id: string;
   firstName: string;
   lastName: string;
+  gender: "male" | "female";
 }
 
 interface MatchedPersonContextType {
@@ -26,17 +27,23 @@ interface MatchedPersonContextType {
   setMatches: (matches: Profile[]) => void;
 }
 
-const MatchedPersonContext = createContext<MatchedPersonContextType | undefined>(undefined);
+const MatchedPersonContext = createContext<
+  MatchedPersonContextType | undefined
+>(undefined);
 
 export function MatchedPersonProvider({ children }: { children: ReactNode }) {
-  const [matchedPersonData, setMatchedPersonData] = useState<Profile | null>(null);
+  const [matchedPersonData, setMatchedPersonData] = useState<Profile | null>(
+    null
+  );
   const [isAwaitingMatch, setIsAwaitingMatch] = useState(false);
   const [matches, setMatches] = useState<Profile[]>([]);
   const [profileData, setProfileData] = useState<Profile | null>(null);
 
   const findMatch = useCallback(async () => {
+    console.log("finding match");
     if (isAwaitingMatch) return;
 
+    console.log("setting is awaiting match to true");
     setIsAwaitingMatch(true);
     try {
       const userData = localStorage.getItem("userData");
@@ -52,25 +59,29 @@ export function MatchedPersonProvider({ children }: { children: ReactNode }) {
       }
 
       // First wait for profile processing to complete
-      const eventSource = new EventSource(`/api/profile/updates?id=${profile_id}`);
-      
+      const eventSource = new EventSource(
+        `/api/profile/updates?id=${profile_id}`
+      );
+
       eventSource.onmessage = async (event) => {
         const { status, data } = JSON.parse(event.data);
-        
+
         if (status === "completed" && data.embedding && data.stringified_data) {
           eventSource.close();
-          
+
           // Now call the match endpoint
           console.log("Profile processing complete, finding matches...");
-          const matchResponse = await fetch(`/api/match?profile_id=${profile_id}`);
-          
+          const matchResponse = await fetch(
+            `/api/match?profile_id=${profile_id}`
+          );
+
           if (!matchResponse.ok) {
-            throw new Error('Failed to find matches');
+            throw new Error("Failed to find matches");
           }
-          
+
           const matchData = await matchResponse.json();
           console.log("Match data received:", matchData);
-          
+
           if (matchData.topMatchData) {
             localStorage.setItem(
               "conversationContext",
@@ -95,12 +106,11 @@ export function MatchedPersonProvider({ children }: { children: ReactNode }) {
         eventSource.close();
         setIsAwaitingMatch(false);
       };
-
     } catch (error) {
       console.error("Error finding match:", error);
       setIsAwaitingMatch(false);
     }
-  }, [isAwaitingMatch]);
+  }, [isAwaitingMatch, setIsAwaitingMatch, setMatchedPersonData]);
 
   return (
     <MatchedPersonContext.Provider
@@ -113,7 +123,7 @@ export function MatchedPersonProvider({ children }: { children: ReactNode }) {
         setIsAwaitingMatch,
         findMatch,
         setProfileData,
-        setMatches
+        setMatches,
       }}
     >
       {children}
