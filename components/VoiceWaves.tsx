@@ -9,6 +9,10 @@ import { Conversation } from "@11labs/client";
 import { useMessages } from "@/contexts/MessagesContext";
 import { Message } from "@/types";
 import { v4 as uuidv4 } from "uuid";
+
+import { motion } from "framer-motion";
+import { Icons } from "./ui/icons";
+
 extend(THREE);
 
 const fragmentShader = `
@@ -157,6 +161,7 @@ function GradientBackground() {
 
 export default function VoiceVisualization() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const { addMessage } = useMessages();
@@ -180,9 +185,11 @@ export default function VoiceVisualization() {
   }
 
   async function startConversation() {
+    setIsConnecting(true);
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
       alert("No permission");
+      setIsConnecting(false);
       return;
     }
     const signedUrl = await getSignedUrl();
@@ -192,6 +199,7 @@ export default function VoiceVisualization() {
       onConnect: () => {
         setIsConnected(true);
         setIsSpeaking(true);
+        setIsConnecting(false);
       },
       onDisconnect: () => {
         setIsConnected(false);
@@ -233,6 +241,7 @@ export default function VoiceVisualization() {
       onError: (error) => {
         console.log(error);
         alert("An error occurred during the conversation");
+        setIsConnecting(false);
       },
       onModeChange: ({ mode }) => {
         setIsSpeaking(mode === "speaking");
@@ -260,34 +269,38 @@ export default function VoiceVisualization() {
         </Canvas>
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-        <Button
-          onClick={startConversation}
-          variant="secondary"
-          disabled={conversation !== null && isConnected}
-          className={`
+        <motion.div
+          layout
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 20,
+          }}
+        >
+          <Button
+            onClick={isConnected ? endConversation : startConversation}
+            variant="secondary"
+            disabled={isConnecting}
+            className={`
               px-6 py-2 gap-2 rounded-full bg-white/90 hover:bg-white 
               transition-all duration-300 shadow-lg
               ${isConnected ? "text-red-500" : "text-zinc-800"}
             `}
-        >
-          {isConnected ? (
-            <Square className="w-4 h-4" />
-          ) : (
-            <Mic className="w-4 h-4" />
-          )}
-          Start Conversation
-        </Button>
-        <Button
-          onClick={endConversation}
-          variant="secondary"
-          disabled={conversation === null && !isConnected}
-          className={`
-              px-6 py-2 gap-2 rounded-full bg-white/90 hover:bg-white 
-              transition-all duration-300 shadow-lg
-            `}
-        >
-          End Conversation
-        </Button>
+          >
+            {isConnecting ? (
+              <Icons.spinner />
+            ) : isConnected ? (
+              <Square className="w-4 h-4" />
+            ) : (
+              <Mic className="w-4 h-4" />
+            )}
+            {isConnecting
+              ? "Connecting..."
+              : isConnected
+              ? "End Conversation"
+              : "Start Conversation"}
+          </Button>
+        </motion.div>
         <div className="text-white text-sm">
           {isConnected ? (
             <p>Agent is {isSpeaking ? "speaking" : "listening"}</p>
