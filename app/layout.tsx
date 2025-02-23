@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistSans, GeistMono } from 'geist/font';
 import "./globals.css";
 import { UserProvider } from "@/contexts/UserContext";
+import { MessagesProvider } from "@/contexts/MessagesContext";
 
 export const metadata: Metadata = {
   title: "Dating App",
@@ -15,13 +16,15 @@ export default function RootLayout({
 }>) {
   return (
     <UserProvider>
-      <html lang="en">
-        <body
-          className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
-        >
-          {children}
-        </body>
-      </html>
+      <MessagesProvider>
+        <html lang="en">
+          <body
+            className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
+          >
+            {children}
+          </body>
+        </html>
+      </MessagesProvider>
     </UserProvider>
   );
 }

@@ -28,7 +28,7 @@ export function TweetCard({ message }: { message: TweetMessage }) {
           <div className="h-10 w-10 rounded-full bg-gray-200" />
           <div className="ml-3">
             <div className="font-bold text-gray-900">{message.username}</div>
-            <div className="text-gray-500 text-sm">@{message.handle}</div>
+            <div className="text-gray-500 text-sm">{message.handle}</div>
           </div>
           <div className="absolute right-0 top-0">
             <Icons.x />
