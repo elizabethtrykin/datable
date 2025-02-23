@@ -48,42 +48,23 @@ export function ProfileForm({ gender, onSubmit }: ProfileFormProps) {
 
   // Fetch links from Exa and categorize them
   const fetchExaLinks = async (name: string) => {
-    // Individual API calls with error handling
-    const twitterResult = await (async () => {
-      try {
-        return await exa.search(name, {
-          includeDomains: ["x.com", "twitter.com"],
-          numResults: 10
-        });
-      } catch (err) {
-        console.error("Twitter search failed:", err);
-        return { results: [] };
-      }
-    })();
-
-    const linkedinResult = await (async () => {
-      try {
-        return await exa.search(name, {
-          includeDomains: ["linkedin.com"],
-          numResults: 10
-        });
-      } catch (err) {
-        console.error("LinkedIn search failed:", err);
-        return { results: [] };
-      }
-    })();
-
-    const generalResult = await (async () => {
-      try {
-        return await exa.search(name, {
-          excludeDomains: ["x.com", "linkedin.com", "instagram.com", "facebook.com"],
-          numResults: 10
-        });
-      } catch (err) {
-        console.error("General search failed:", err);
-        return { results: [] };
-      }
-    })();
+    // Run all searches in parallel with Promise.allSettled
+    const [twitterResult, linkedinResult, generalResult] = await Promise.allSettled([
+      exa.search(name, {
+        includeDomains: ["x.com", "twitter.com"],
+        numResults: 10
+      }),
+      exa.search(name, {
+        includeDomains: ["linkedin.com"],
+        numResults: 10
+      }),
+      exa.search(name, {
+        excludeDomains: ["x.com", "linkedin.com", "instagram.com", "facebook.com"],
+        numResults: 10
+      })
+    ]).then(results => results.map(result => 
+      result.status === 'fulfilled' ? result.value : { results: [] }
+    ));
 
     const twitterSuggestions: Suggestion[] = [];
     const linkedinSuggestions: Suggestion[] = [];
