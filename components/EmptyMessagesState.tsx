@@ -3,7 +3,7 @@ import { EmptyTweetSkeleton } from "./EmptyTweetSkeleton";
 
 export default function EmptyMessageState() {
   return (
-    <div className="w-full justify-center items-center">
+    <div className="w-full justify-center self-center items-center group pl-8">
       <div className="relative w-full h-fit pb-12">
         <div className="absolute bottom-24 -rotate-12 left-0 size-16 z-30 bg-white rounded-xl flex items-center justify-center border-2 transition-all duration-150 group-hover:rotate-[0deg]">
           <img
@@ -15,7 +15,7 @@ export default function EmptyMessageState() {
         <div className="relative z-10 transition-all duration-150 -rotate-3 group-hover:rotate-6">
           <EmptyMessageSkeleton />
         </div>
-        <div className="absolute -top-24 left-12 rotate-[14deg] w-full h-full z-20 -translate-x-5 transition-all duration-150 group-hover:rotate-[-3deg]">
+        <div className="absolute -top-24 left-12 rotate-[14deg] max-w-96 h-full z-20 -translate-x-5 transition-all duration-150 group-hover:rotate-[-3deg]">
           <EmptyTweetSkeleton />
         </div>
       </div>
