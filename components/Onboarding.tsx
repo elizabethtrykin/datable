@@ -27,16 +27,7 @@ export function Onboarding() {
   const handleProfileSubmit = async (profileData: FormData) => {
     const updatedData = { ...profileData, gender: formData.gender };
 
-    localStorage.setItem(
-      "userData",
-      JSON.stringify({
-        firstName: updatedData.firstName,
-        gender: updatedData.gender,
-      })
-    );
-
-    // Create profile for both genders
-    const response = await fetch("/api/profile", {
+    const res = await fetch("/api/profile", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -52,36 +43,18 @@ export function Onboarding() {
       }),
     });
 
-    const result = await response.json();
+    const { profile_id } = await res.json();
 
-    // If female profile, get matches
-    if (updatedData.gender === "female" && result.profile_id) {
-      const matchResponse = await fetch(`/api/match?profile_id=${result.profile_id}`);
-      const matchData = await matchResponse.json();
+    console.log("profile", profile_id);
 
-      if (matchData.matches?.length > 0) {
-        // Store all the context data
-        localStorage.setItem("matches", JSON.stringify(matchData.matches));
-        localStorage.setItem(
-          "conversationContext",
-          JSON.stringify({
-            female: matchData.profileData,
-            male: matchData.topMatchData,
-          })
-        );
-      } else {
-        console.log("No matches found:", matchData.message);
-        localStorage.setItem("matches", JSON.stringify([]));
-        localStorage.setItem(
-          "conversationContext",
-          JSON.stringify({
-            female: { profile_id: result.profile_id },
-            male: null,
-          })
-        );
-      }
-    }
-
+    localStorage.setItem(
+      "userData",
+      JSON.stringify({
+        firstName: updatedData.firstName,
+        gender: updatedData.gender,
+        profile_id,
+      })
+    );
     setFormData(updatedData);
     setShowSuccess(true);
 

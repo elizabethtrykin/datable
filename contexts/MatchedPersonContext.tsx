@@ -8,15 +8,15 @@ import {
   ReactNode,
 } from "react";
 
-interface MatchedPerson {
+interface Profile {
   id: string;
   firstName: string;
   lastName: string;
 }
 
 interface MatchedPersonContextType {
-  matchedPersonData: MatchedPerson | null;
-  setMatchedPersonData: (data: MatchedPerson | null) => void;
+  matchedPersonData: Profile | null;
+  setMatchedPersonData: (data: Profile | null) => void;
   isAwaitingMatch: boolean;
   setIsAwaitingMatch: (isAwaiting: boolean) => void;
   findMatch: () => Promise<void>;
@@ -27,31 +27,57 @@ const MatchedPersonContext = createContext<
 >(undefined);
 
 export function MatchedPersonProvider({ children }: { children: ReactNode }) {
-  const [matchedPersonData, setMatchedPersonData] =
-    useState<MatchedPerson | null>(null);
+  const [matchedPersonData, setMatchedPersonData] = useState<Profile | null>(
+    null
+  );
   const [isAwaitingMatch, setIsAwaitingMatch] = useState(false);
+  const [matches, setMatches] = useState<Profile[]>([]);
+  const [profileData, setProfileData] = useState<Profile | null>(null);
 
   const findMatch = useCallback(async () => {
-    if (isAwaitingMatch || matchedPersonData) return;
+    if (isAwaitingMatch) return;
 
     setIsAwaitingMatch(true);
     try {
-      const matchResponse = await fetch("/api/match", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const matchData = await matchResponse.json();
-      setMatchedPersonData(matchData);
+      const userData = localStorage.getItem("userData");
+      if (!userData) {
+        console.log("No user data found");
+        return;
+      }
+
+      const { gender, profile_id } = JSON.parse(userData);
+      if (gender !== "female") {
+        console.log("User is not female, skipping match");
+        return;
+      }
+
+      const matchResponse = await fetch(`/api/match?profile_id=${profile_id}`);
+      const { matches, topMatchData, profileData } = await matchResponse.json();
+
+      localStorage.setItem(
+        "conversationContext",
+        JSON.stringify({
+          female: profileData,
+          male: topMatchData,
+        })
+      );
+
+      setMatches(matches);
+      setProfileData(profileData);
+      setMatchedPersonData(topMatchData);
+      setIsAwaitingMatch(false);
+    } catch (error) {
+      console.error("Error finding match:", error);
     } finally {
       setIsAwaitingMatch(false);
     }
-  }, [isAwaitingMatch, matchedPersonData]);
+  }, [isAwaitingMatch]);
 
   return (
     <MatchedPersonContext.Provider
       value={{
+        matches,
+        profileData,
         matchedPersonData,
         setMatchedPersonData,
         isAwaitingMatch,
