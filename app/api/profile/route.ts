@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseConfig';
 import Exa from 'exa-js';
+import OpenAI from 'openai';
 import { 
   fetchTwitterData, 
   fetchLinkedInData, 
@@ -11,6 +12,17 @@ import {
 } from '@/lib/utils';
 
 const exa = new Exa(process.env.EXA_API_KEY as string);
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+async function generateEmbedding(text: string) {
+  const response = await openai.embeddings.create({
+    input: text,
+    model: "text-embedding-3-small"
+  });
+  return response.data[0].embedding;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,6 +90,7 @@ export async function POST(req: NextRequest) {
     // Fetch all available data
     try {
       const updates: any = { processing_status: 'completed' };
+      const allData: any = {}; // Store all fetched data here
 
       // Fetch data in parallel
       const fetchPromises = [];
@@ -85,21 +98,30 @@ export async function POST(req: NextRequest) {
       if (twitter_handle) {
         fetchPromises.push(
           fetchTwitterData(twitter_handle, exa)
-            .then(data => { updates.twitter_data = data; })
+            .then(data => { 
+              updates.twitter_data = data;
+              allData.twitter = data;
+            })
         );
       }
 
       if (linkedin_url) {
         fetchPromises.push(
           fetchLinkedInData(linkedin_url, exa)
-            .then(data => { updates.linkedin_data = data; })
+            .then(data => { 
+              updates.linkedin_data = data;
+              allData.linkedin = data;
+            })
         );
       }
 
       if (personal_website) {
         fetchPromises.push(
           fetchWebsiteData(personal_website, exa)
-            .then(data => { updates.website_data = data; })
+            .then(data => { 
+              updates.website_data = data;
+              allData.website = data;
+            })
         );
       }
 
@@ -107,12 +129,26 @@ export async function POST(req: NextRequest) {
         fetchPromises.push(
           Promise.all(
             other_links.map((url: string) => fetchOtherLinkData(url, exa))
-          ).then(data => { updates.other_links_data = data; })
+          ).then(data => { 
+            updates.other_links_data = data;
+            allData.other_links = data;
+          })
         );
       }
 
       // Wait for all fetches to complete
       await Promise.all(fetchPromises);
+
+      // Create a text representation of all data for embedding
+      const textForEmbedding = `
+        ${allData.twitter ? `Twitter Profile: ${JSON.stringify(allData.twitter)}` : ''}
+        ${allData.linkedin ? `LinkedIn Profile: ${JSON.stringify(allData.linkedin)}` : ''}
+        ${allData.website ? `Personal Website: ${JSON.stringify(allData.website)}` : ''}
+        ${allData.other_links ? `Other Links: ${JSON.stringify(allData.other_links)}` : ''}
+      `.trim();
+
+      // Generate embedding
+      updates.embedding = await generateEmbedding(textForEmbedding);
 
       const { error: updateError } = await supabase
         .from('profiles')

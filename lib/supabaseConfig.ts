@@ -24,6 +24,7 @@ export type Profile = {
     text: string;
   } | null;
   other_links_data: any[] | null;
+  embedding: number[] | null;
   processing_status: 'pending' | 'processing' | 'completed' | 'failed';
   error_message?: string;
   last_updated: string;
