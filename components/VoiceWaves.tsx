@@ -131,6 +131,7 @@ function GradientBackground({ isConnected }: { isConnected: boolean }) {
       materialRef.current.uniforms.uTime.value = clock.getElapsedTime();
     }
   });
+
   const uniforms = useRef({
     uTime: { value: 0 },
     uColorA: { value: new THREE.Color("#e6f3ff").convertSRGBToLinear() },

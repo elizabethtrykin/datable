@@ -63,7 +63,7 @@ export function ProfileForm({ gender, onSubmit }: ProfileFormProps) {
         }),
         // General search for personal websites
         exa.search(name, {
-          excludeDomains: ["x.com", "linkedin.com", "facebook.com", "instagram.com"],
+          excludeDomains: ["x.com", "linkedin.com"],
           numResults: 10
         })
       ]);
