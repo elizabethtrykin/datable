@@ -2,10 +2,12 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { Message } from "@/types";
+import { useMatchedPerson } from "./MatchedPersonContext";
 
 interface MessagesContextType {
   messages: Message[];
   addMessage: (message: Message) => void;
+  showMatchContactInfo: () => void;
 }
 
 const MessagesContext = createContext<MessagesContextType | undefined>(
@@ -13,16 +15,32 @@ const MessagesContext = createContext<MessagesContextType | undefined>(
 );
 
 export function MessagesProvider({ children }: { children: ReactNode }) {
+  const { profileData } = useMatchedPerson();
   const [messages, setMessages] = useState<Message[]>([]);
 
   const addMessage = (message: Message) => {
     setMessages((prev) => [...prev, message]);
   };
 
+  console.log("profileData", profileData);
+
+  const showMatchContactInfo = () => {
+    // @ts-expect-error idc rn
+    addMessage({
+      id: "uuaiuhdiuahdiuahiudha",
+      type: "profile",
+      content: `Here is the contact info for the person you matched with: ${profileData?.firstName} ${profileData?.lastName}`,
+      url: `https://x.com/${profileData?.twitter_handle}`,
+      username: profileData?.twitter_handle || "",
+    });
+  };
+
   console.log(messages);
 
   return (
-    <MessagesContext.Provider value={{ messages, addMessage }}>
+    <MessagesContext.Provider
+      value={{ messages, addMessage, showMatchContactInfo }}
+    >
       {children}
     </MessagesContext.Provider>
   );

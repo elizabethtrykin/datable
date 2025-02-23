@@ -1,26 +1,39 @@
-export interface BaseMessage {
+export interface Message {
   id: string;
-  content: string;
+  type: "message" | "tweet" | "profile" | "regular" | "image";
+  content?: string;
   timestamp: number;
-  label: string;
-  type: "regular" | "tweet" | "image";
 }
 
-export interface RegularMessage extends BaseMessage {
-  type: "regular";
-}
-
-export interface TweetMessage extends BaseMessage {
+export interface TweetMessage extends Message {
   type: "tweet";
   username: string;
   handle: string;
   likes: number;
   retweets: number;
+  label: string;
+  content: string;
 }
 
-export interface ImageMessage extends BaseMessage {
+export interface ProfileMessage extends Message {
+  type: "profile";
+  username: string;
+  handle: string;
+  url: string;
+  label: string;
+}
+
+export interface RegularMessage extends Message {
+  type: "regular";
+}
+
+export interface ImageMessage extends Message {
   type: "image";
   imageUrl: string;
 }
 
-export type Message = RegularMessage | TweetMessage | ImageMessage;
+export type MessageType =
+  | RegularMessage
+  | TweetMessage
+  | ImageMessage
+  | ProfileMessage;

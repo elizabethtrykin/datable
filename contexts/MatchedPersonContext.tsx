@@ -13,6 +13,9 @@ interface Profile {
   firstName: string;
   lastName: string;
   gender: "male" | "female";
+  twitter_handle: string;
+  linkedin_url: string;
+  profile_id: string;
 }
 
 interface MatchedPersonContextType {

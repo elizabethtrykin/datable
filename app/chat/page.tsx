@@ -15,7 +15,7 @@ import { Heart, X } from "lucide-react";
 import { Icons } from "@/components/ui/icons";
 
 export default function ChatPage() {
-  const { messages } = useMessages();
+  const { messages, showMatchContactInfo } = useMessages();
   const {
     matchedPersonData,
     isAwaitingMatch,
@@ -69,27 +69,26 @@ export default function ChatPage() {
           <MessageList />
 
           <div className="absolute bottom-2 left-2 flex flex-row gap-2 ">
-            {canPerformEarlyAction && (
-              <>
-                {" "}
-                <Button
-                  variant="outline"
-                  className="flex flex-row gap-2"
-                  disabled={!canPerformEarlyAction}
-                >
-                  <X className="size-3" />
-                  pass this one
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex flex-row gap-2"
-                  disabled={!canPerformEarlyAction}
-                >
-                  <Heart className="size-3" />
-                  intro right now!
-                </Button>
-              </>
-            )}
+            <>
+              {" "}
+              {/* <Button
+                variant="outline"
+                className="flex flex-row gap-2"
+                disabled={!canPerformEarlyAction}
+              >
+                <X className="size-3" />
+                pass this one
+              </Button> */}
+              <Button
+                variant="outline"
+                onClick={showMatchContactInfo}
+                className="flex flex-row gap-2"
+                // disabled={!canPerformEarlyAction}
+              >
+                <Heart className="size-3" />
+                intro right now!
+              </Button>
+            </>
           </div>
         </div>
       </ResizablePanel>

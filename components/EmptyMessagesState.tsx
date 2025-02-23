@@ -3,7 +3,7 @@ import { EmptyTweetSkeleton } from "./EmptyTweetSkeleton";
 
 export default function EmptyMessageState() {
   return (
-    <div className="w-80 group">
+    <div className="w-full justify-center items-center">
       <div className="relative w-full h-fit pb-12">
         <div className="absolute bottom-24 -rotate-12 left-0 size-16 z-30 bg-white rounded-xl flex items-center justify-center border-2 transition-all duration-150 group-hover:rotate-[0deg]">
           <img

@@ -17,8 +17,8 @@ export default function RootLayout({
 }>) {
   return (
     <UserProvider>
-      <MessagesProvider>
-        <MatchedPersonProvider>
+      <MatchedPersonProvider>
+        <MessagesProvider>
           <html lang="en">
             <body
               className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
@@ -26,8 +26,8 @@ export default function RootLayout({
               {children}
             </body>
           </html>
-        </MatchedPersonProvider>
-      </MessagesProvider>
+        </MessagesProvider>
+      </MatchedPersonProvider>
     </UserProvider>
   );
 }

@@ -51,6 +51,7 @@ export function Onboarding() {
         firstName: updatedData.firstName,
         gender: updatedData.gender,
         profile_id,
+        twitter_handle: updatedData.twitterHandle,
       })
     );
     setFormData(updatedData);
@@ -64,7 +65,12 @@ export function Onboarding() {
   };
 
   if (showSuccess) {
-    return <OnboardingSuccess firstName={formData.firstName || ""} gender={formData.gender || "female"} />;
+    return (
+      <OnboardingSuccess
+        firstName={formData.firstName || ""}
+        gender={formData.gender || "female"}
+      />
+    );
   }
 
   if (step === 1) {
