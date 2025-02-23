@@ -6,7 +6,6 @@ import { OnboardingSuccess } from "./OnboardingSuccess";
 interface FormData {
   gender?: "male" | "female";
   firstName?: string;
-  lastName?: string;
   twitterHandle?: string;
   linkedinHandle?: string;
   personalWebsite?: string;
@@ -30,28 +29,27 @@ export function Onboarding() {
       "userData",
       JSON.stringify({
         firstName: updatedData.firstName,
-        lastName: updatedData.lastName,
         gender: updatedData.gender,
       })
     );
 
-    if (updatedData.gender === "male") {
-      fetch("/api/profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          twitter_handle: updatedData.twitterHandle?.trim() || null,
-          linkedin_url: updatedData.linkedinHandle
-            ? `https://www.linkedin.com/in/${updatedData.linkedinHandle.trim()}/`
-            : null,
-          personal_website: updatedData.personalWebsite?.trim() || null,
-          other_links:
-            updatedData.otherLinks?.map((link) => link.trim()) || null,
-        }),
-      });
-    }
+    // Create profile for both genders
+    await fetch("/api/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        gender: updatedData.gender,
+        twitter_handle: updatedData.twitterHandle?.trim() || null,
+        linkedin_url: updatedData.linkedinHandle
+          ? `https://www.linkedin.com/in/${updatedData.linkedinHandle.trim()}/`
+          : null,
+        personal_website: updatedData.personalWebsite?.trim() || null,
+        other_links:
+          updatedData.otherLinks?.map((link) => link.trim()) || null,
+      }),
+    });
 
     setFormData(updatedData);
     setShowSuccess(true);

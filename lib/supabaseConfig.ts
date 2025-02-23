@@ -12,6 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export type Profile = {
   id: string;
   created_at: string;
+  gender: 'male' | 'female';
   twitter_handle: string;
   linkedin_url: string | null;
   personal_website: string | null;

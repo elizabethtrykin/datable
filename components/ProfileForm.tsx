@@ -4,7 +4,6 @@ import { Input } from "./ui/input";
 
 interface ProfileFormData {
   firstName?: string;
-  lastName?: string;
   twitterHandle?: string;
   linkedinHandle?: string;
   personalWebsite?: string;
@@ -45,8 +44,8 @@ export function ProfileForm({ gender, onSubmit }: ProfileFormProps) {
     setError(null);
 
     try {
-      if (!formData.firstName || !formData.lastName) {
-        throw new Error("First and last name are required");
+      if (!formData.firstName) {
+        throw new Error("First name is required");
       }
       await onSubmit(formData);
     } catch (err) {
@@ -66,75 +65,63 @@ export function ProfileForm({ gender, onSubmit }: ProfileFormProps) {
             setFormData({ ...formData, firstName: e.target.value })
           }
         />
+
         <Input
           type="text"
-          placeholder="Last Name"
-          required
+          placeholder="Twitter Handle (without @)"
           onChange={(e) =>
-            setFormData({ ...formData, lastName: e.target.value })
+            setFormData({ ...formData, twitterHandle: e.target.value })
           }
         />
-
-        {gender === "male" && (
-          <>
-            <Input
-              type="text"
-              placeholder="Twitter Handle (without @)"
-              onChange={(e) =>
-                setFormData({ ...formData, twitterHandle: e.target.value })
-              }
-            />
-            <Input
-              type="text"
-              placeholder="LinkedIn Username"
-              onChange={(e) =>
-                setFormData({ ...formData, linkedinHandle: e.target.value })
-              }
-            />
+        <Input
+          type="text"
+          placeholder="LinkedIn Username"
+          onChange={(e) =>
+            setFormData({ ...formData, linkedinHandle: e.target.value })
+          }
+        />
+        <Input
+          type="url"
+          placeholder="Personal Website"
+          onChange={(e) =>
+            setFormData({ ...formData, personalWebsite: e.target.value })
+          }
+        />
+        <div className="space-y-2">
+          <div className="flex gap-2">
             <Input
               type="url"
-              placeholder="Personal Website"
-              onChange={(e) =>
-                setFormData({ ...formData, personalWebsite: e.target.value })
-              }
+              placeholder="Other Link"
+              value={otherLink}
+              onChange={(e) => setOtherLink(e.target.value)}
             />
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  type="url"
-                  placeholder="Other Link"
-                  value={otherLink}
-                  onChange={(e) => setOtherLink(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  onClick={addOtherLink}
-                  disabled={
-                    !otherLink || (formData.otherLinks?.length || 0) >= 5
-                  }
-                >
-                  Add
-                </Button>
-              </div>
-              {formData.otherLinks?.map((link, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="truncate flex-1">{link}</span>
-                  <Button
-                    type="button"
-                    onClick={() => removeOtherLink(index)}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
-              {formData.otherLinks?.length === 5 && (
-                <p className="text-sm text-gray-500">Maximum 5 links reached</p>
-              )}
+            <Button
+              type="button"
+              onClick={addOtherLink}
+              disabled={
+                !otherLink || (formData.otherLinks?.length || 0) >= 5
+              }
+            >
+              Add
+            </Button>
+          </div>
+          {formData.otherLinks?.map((link, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <span className="truncate flex-1">{link}</span>
+              <Button
+                type="button"
+                onClick={() => removeOtherLink(index)}
+                variant="destructive"
+                size="sm"
+              >
+                Remove
+              </Button>
             </div>
-          </>
-        )}
+          ))}
+          {formData.otherLinks?.length === 5 && (
+            <p className="text-sm text-gray-500">Maximum 5 links reached</p>
+          )}
+        </div>
 
         {error && <div className="text-red-500 text-sm">{error}</div>}
 

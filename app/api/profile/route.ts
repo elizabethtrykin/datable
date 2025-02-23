@@ -27,7 +27,7 @@ async function generateEmbedding(text: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { twitter_handle, linkedin_url, personal_website, other_links } = body;
+    const { twitter_handle, linkedin_url, personal_website, other_links, gender } = body;
 
     if (twitter_handle && !isValidTwitterHandle(twitter_handle)) {
       return NextResponse.json({ error: 'Invalid Twitter handle' }, { status: 400 });
@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
 
     if (linkedin_url && !isValidUrl(linkedin_url)) {
       return NextResponse.json({ error: 'Invalid LinkedIn URL' }, { status: 400 });
+    }
+
+    if (!gender || !['male', 'female'].includes(gender)) {
+      return NextResponse.json({ error: 'Valid gender is required' }, { status: 400 });
     }
 
     // Check if profile exists
@@ -57,6 +61,7 @@ export async function POST(req: NextRequest) {
       const { data, error: updateError } = await supabase
         .from('profiles')
         .update({
+          gender,
           twitter_handle: twitter_handle || null,
           linkedin_url: linkedin_url || null,
           personal_website: personal_website || null,
@@ -74,6 +79,7 @@ export async function POST(req: NextRequest) {
       const { data, error: insertError } = await supabase
         .from('profiles')
         .insert({
+          gender,
           twitter_handle: twitter_handle || null,
           linkedin_url: linkedin_url || null,
           personal_website: personal_website || null,
@@ -147,8 +153,9 @@ export async function POST(req: NextRequest) {
         ${allData.other_links ? `Other Links: ${JSON.stringify(allData.other_links)}` : ''}
       `.trim();
 
-      // Generate embedding
+      // Generate embedding and update profile with both stringified data and embedding
       updates.embedding = await generateEmbedding(textForEmbedding);
+      updates.stringified_data = textForEmbedding;
 
       const { error: updateError } = await supabase
         .from('profiles')
