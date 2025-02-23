@@ -3,10 +3,54 @@ import { useState } from "react";
 
 interface OnboardingSuccessProps {
   firstName: string;
+  gender: "male" | "female";
 }
 
-export function OnboardingSuccess({ firstName }: OnboardingSuccessProps) {
+export function OnboardingSuccess({ firstName, gender }: OnboardingSuccessProps) {
   const [showSecond, setShowSecond] = useState(false);
+
+  if (gender === "male") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="text-center relative">
+          <motion.h2
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.4,
+              ease: "easeInOut",
+            }}
+            onAnimationComplete={() => {
+              setTimeout(() => {
+                setShowSecond(true);
+              }, 1500);
+            }}
+            className="text-5xl font-bold"
+          >
+            Hey {firstName},
+          </motion.h2>
+
+          <div className="h-10 pt-8 relative">
+            <AnimatePresence>
+              {showSecond && (
+                <motion.h2
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    duration: 0.4,
+                    ease: "easeInOut",
+                  }}
+                  className="text-sm absolute w-full"
+                >
+                  keep a look out for your Twitter DMs
+                </motion.h2>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6">

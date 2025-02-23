@@ -56,13 +56,15 @@ export function Onboarding() {
     setFormData(updatedData);
     setShowSuccess(true);
 
-    setTimeout(() => {
-      router.push("/chat");
-    }, 2000);
+    if (updatedData.gender === "female") {
+      setTimeout(() => {
+        router.push("/chat");
+      }, 2000);
+    }
   };
 
   if (showSuccess) {
-    return <OnboardingSuccess firstName={formData.firstName || ""} />;
+    return <OnboardingSuccess firstName={formData.firstName || ""} gender={formData.gender || "female"} />;
   }
 
   if (step === 1) {

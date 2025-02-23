@@ -12,16 +12,51 @@ import {
   formatProfileData,
 } from "@/lib/utils";
 
+const exa = new Exa(process.env.EXA_API_KEY as string);
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 async function generateEmbedding(text: string) {
-  const response = await openai.embeddings.create({
-    input: text,
-    model: "text-embedding-3-small",
-  });
-  return response.data[0].embedding;
+  try {
+    const response = await openai.embeddings.create({
+      input: text,
+      model: "text-embedding-3-small",
+    });
+    return response.data[0].embedding;
+  } catch (error: any) {
+    if (error?.message?.includes('maximum context length')) {
+      console.log('Text too long, truncating...');
+      const maxChars = Math.floor(8192 * 3.5);
+      const truncatedText = text.slice(0, maxChars);
+      
+      const truncatedResponse = await openai.embeddings.create({
+        input: truncatedText,
+        model: "text-embedding-3-small",
+      });
+      return truncatedResponse.data[0].embedding;
+    }
+    throw error;
+  }
+}
+
+async function findMatch(profileId: string) {
+  // Get potential matches
+  const { data: maleProfiles } = await supabase
+    .from("profiles")
+    .select("id, twitter_handle, embedding, stringified_data")
+    .eq("gender", "male")
+    .not("embedding", "is", null);
+
+  if (!maleProfiles?.length) return null;
+
+  // Get random male profile for now (we'll implement proper matching later)
+  const randomMatch = maleProfiles[Math.floor(Math.random() * maleProfiles.length)];
+  
+  return {
+    profile_id: randomMatch.id,
+    stringified_data: randomMatch.stringified_data
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -72,7 +107,6 @@ export async function POST(req: NextRequest) {
 
     let profile;
     if (existingProfile) {
-      // Update existing profile - reset all fields to ensure complete override
       const { data, error: updateError } = await supabase
         .from("profiles")
         .update({
@@ -87,7 +121,7 @@ export async function POST(req: NextRequest) {
           other_links_data: null,
           embedding: null,
           stringified_data: null,
-          processing_status: "pending",
+          processing_status: "processing",
           error_message: null,
         })
         .eq("id", existingProfile.id)
@@ -97,7 +131,6 @@ export async function POST(req: NextRequest) {
       if (updateError) throw updateError;
       profile = data;
     } else {
-      // Create new profile
       const { data, error: insertError } = await supabase
         .from("profiles")
         .insert({
@@ -106,7 +139,7 @@ export async function POST(req: NextRequest) {
           linkedin_url: linkedin_url || null,
           personal_website: personal_website || null,
           other_links: other_links || null,
-          processing_status: "pending",
+          processing_status: "processing",
         })
         .select()
         .single();
@@ -115,79 +148,44 @@ export async function POST(req: NextRequest) {
       profile = data;
     }
 
-    // Return immediately with the profile ID
-    const response = NextResponse.json({
-      message: existingProfile ? "Profile updated" : "Profile created",
-      profile_id: profile.id,
-    });
-
-    // Process data fetching in the background
-    (async () => {
+    // Start processing data immediately
+    const processPromise = (async () => {
       try {
-        const exa = new Exa(process.env.EXA_API_KEY as string);
-        const openai = new OpenAI({
-          apiKey: process.env.OPENAI_API_KEY,
-        });
-
         const updates: any = { processing_status: "completed" };
-        const allData: any = {}; // Store all fetched data here
+        const allData: any = {};
 
-        // Fetch data in parallel
-        const fetchPromises = [];
+        // Fetch all data in parallel
+        const [twitterData, linkedinData, websiteData, otherLinksData] = await Promise.all([
+          twitter_handle ? fetchTwitterData(twitter_handle, exa) : null,
+          linkedin_url ? fetchLinkedInData(linkedin_url, exa) : null,
+          personal_website ? fetchWebsiteData(personal_website, exa) : null,
+          other_links?.length ? Promise.all(other_links.map((url: string) => fetchOtherLinkData(url, exa))) : null
+        ]);
 
-        if (twitter_handle) {
-          fetchPromises.push(
-            fetchTwitterData(twitter_handle, exa).then((data) => {
-              if (data) {
-                updates.twitter_data = data;
-                allData.twitter = data;
-              }
-            })
-          );
+        // Update data if available
+        if (twitterData) {
+          updates.twitter_data = twitterData;
+          allData.twitter = twitterData;
+        }
+        if (linkedinData) {
+          updates.linkedin_data = linkedinData;
+          allData.linkedin = linkedinData;
+        }
+        if (websiteData) {
+          updates.website_data = websiteData;
+          allData.website = websiteData;
+        }
+        if (otherLinksData?.length) {
+          const validData = otherLinksData.filter(data => data !== null);
+          if (validData.length > 0) {
+            updates.other_links_data = validData;
+            allData.other_links = validData;
+          }
         }
 
-        if (linkedin_url) {
-          fetchPromises.push(
-            fetchLinkedInData(linkedin_url, exa).then((data) => {
-              if (data) {
-                updates.linkedin_data = data;
-                allData.linkedin = data;
-              }
-            })
-          );
-        }
-
-        if (personal_website) {
-          fetchPromises.push(
-            fetchWebsiteData(personal_website, exa).then((data) => {
-              if (data) {
-                updates.website_data = data;
-                allData.website = data;
-              }
-            })
-          );
-        }
-
-        if (other_links?.length) {
-          fetchPromises.push(
-            Promise.all(
-              other_links.map((url: string) => fetchOtherLinkData(url, exa))
-            ).then((dataArray) => {
-              const validData = dataArray.filter((data) => data !== null);
-              if (validData.length > 0) {
-                updates.other_links_data = validData;
-                allData.other_links = validData;
-              }
-            })
-          );
-        }
-
-        // Wait for all fetches to complete
-        await Promise.all(fetchPromises);
-
-        // Only proceed with embedding if we have any data
+        // Create formatted data and embedding if we have any data
         if (Object.keys(allData).length > 0) {
-          // Create a formatted text representation of all data
+          console.log('Creating formatted data with:', { allData });
           const formattedData = formatProfileData({
             gender,
             twitter_handle,
@@ -199,35 +197,54 @@ export async function POST(req: NextRequest) {
             website_data: allData.website,
             other_links_data: allData.other_links,
           });
-
-          // Generate embedding from the formatted data
+          
+          console.log('Formatted data:', formattedData);
+          console.log('Generating embedding...');
           updates.embedding = await generateEmbedding(formattedData);
+          console.log('Embedding generated:', updates.embedding.length);
           updates.stringified_data = formattedData;
         } else {
-          updates.processing_status = "failed";
-          updates.error_message = "No social data could be fetched";
+          console.log('No data available to generate embedding');
         }
 
+        // Update profile with all the data
         await supabase
           .from("profiles")
           .update(updates)
           .eq("id", profile.id);
 
+        // If this is a female profile, find a match
+        if (gender === "female") {
+          const match = await findMatch(profile.id);
+          if (match) {
+            return {
+              profile,
+              match,
+              stringified_data: updates.stringified_data
+            };
+          }
+        }
+
+        return { profile, stringified_data: updates.stringified_data };
       } catch (error) {
         await supabase
           .from("profiles")
           .update({
             processing_status: "failed",
-            error_message:
-              error instanceof Error
-                ? error.message
-                : "Failed to fetch profile data",
+            error_message: error instanceof Error ? error.message : "Failed to process profile data",
           })
           .eq("id", profile.id);
+        throw error;
       }
     })();
 
-    return response;
+    // Return initial response with profile ID and processing promise
+    return NextResponse.json({
+      message: existingProfile ? "Profile updated" : "Profile created",
+      profile_id: profile.id,
+      // Stream updates using Server-Sent Events
+      updates_url: `/api/profile/updates?id=${profile.id}`,
+    });
 
   } catch (error) {
     return NextResponse.json(

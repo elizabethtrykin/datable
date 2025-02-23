@@ -26,14 +26,10 @@ interface MatchedPersonContextType {
   setMatches: (matches: Profile[]) => void;
 }
 
-const MatchedPersonContext = createContext<
-  MatchedPersonContextType | undefined
->(undefined);
+const MatchedPersonContext = createContext<MatchedPersonContextType | undefined>(undefined);
 
 export function MatchedPersonProvider({ children }: { children: ReactNode }) {
-  const [matchedPersonData, setMatchedPersonData] = useState<Profile | null>(
-    null
-  );
+  const [matchedPersonData, setMatchedPersonData] = useState<Profile | null>(null);
   const [isAwaitingMatch, setIsAwaitingMatch] = useState(false);
   const [matches, setMatches] = useState<Profile[]>([]);
   const [profileData, setProfileData] = useState<Profile | null>(null);
@@ -55,24 +51,53 @@ export function MatchedPersonProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const matchResponse = await fetch(`/api/match?profile_id=${profile_id}`);
-      const { matches, topMatchData, profileData } = await matchResponse.json();
+      // First wait for profile processing to complete
+      const eventSource = new EventSource(`/api/profile/updates?id=${profile_id}`);
+      
+      eventSource.onmessage = async (event) => {
+        const { status, data } = JSON.parse(event.data);
+        
+        if (status === "completed" && data.embedding && data.stringified_data) {
+          eventSource.close();
+          
+          // Now call the match endpoint
+          console.log("Profile processing complete, finding matches...");
+          const matchResponse = await fetch(`/api/match?profile_id=${profile_id}`);
+          
+          if (!matchResponse.ok) {
+            throw new Error('Failed to find matches');
+          }
+          
+          const matchData = await matchResponse.json();
+          console.log("Match data received:", matchData);
+          
+          if (matchData.topMatchData) {
+            localStorage.setItem(
+              "conversationContext",
+              JSON.stringify({
+                female: { stringified_data: data.stringified_data },
+                male: matchData.topMatchData,
+              })
+            );
 
-      localStorage.setItem(
-        "conversationContext",
-        JSON.stringify({
-          female: profileData,
-          male: topMatchData,
-        })
-      );
+            setMatchedPersonData(matchData.topMatchData);
+            setIsAwaitingMatch(false);
+          }
+        } else if (status === "failed") {
+          console.error("Profile processing failed:", data.error_message);
+          eventSource.close();
+          setIsAwaitingMatch(false);
+        }
+      };
 
-      setMatches(matches);
-      setProfileData(profileData);
-      setMatchedPersonData(topMatchData);
-      setIsAwaitingMatch(false);
+      eventSource.onerror = (error) => {
+        console.error("EventSource failed:", error);
+        eventSource.close();
+        setIsAwaitingMatch(false);
+      };
+
     } catch (error) {
       console.error("Error finding match:", error);
-    } finally {
       setIsAwaitingMatch(false);
     }
   }, [isAwaitingMatch]);
@@ -87,6 +112,8 @@ export function MatchedPersonProvider({ children }: { children: ReactNode }) {
         isAwaitingMatch,
         setIsAwaitingMatch,
         findMatch,
+        setProfileData,
+        setMatches
       }}
     >
       {children}

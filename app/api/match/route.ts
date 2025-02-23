@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseConfig";
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  console.log("vecA", typeof vecA);
-  console.log("vecB", typeof vecB);
+  console.log("Calculating similarity between vectors:", {
+    vecALength: vecA?.length,
+    vecBLength: vecB?.length
+  });
+  
   if (!vecA || !vecB) {
     console.log("Received null vector", { vecA, vecB });
     return 0;
@@ -11,7 +14,16 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   const dotProduct = vecA.reduce((acc, val, i) => acc + val * vecB[i], 0);
   const magnitudeA = Math.sqrt(vecA.reduce((acc, val) => acc + val * val, 0));
   const magnitudeB = Math.sqrt(vecB.reduce((acc, val) => acc + val * val, 0));
-  return dotProduct / (magnitudeA * magnitudeB);
+  
+  const similarity = dotProduct / (magnitudeA * magnitudeB);
+  console.log("Similarity calculation results:", {
+    dotProduct,
+    magnitudeA,
+    magnitudeB,
+    similarity
+  });
+  
+  return similarity;
 }
 
 export async function GET(req: NextRequest) {
@@ -21,7 +33,7 @@ export async function GET(req: NextRequest) {
     const profileId = searchParams.get("profile_id");
     const limit = parseInt(searchParams.get("limit") || "5", 10);
 
-    console.log("Profile ID:", profileId);
+    console.log("Match request parameters:", { profileId, limit });
 
     if (!profileId) {
       console.log("No profile ID provided");
@@ -38,8 +50,11 @@ export async function GET(req: NextRequest) {
       .eq("id", profileId)
       .single();
 
-    console.log("femaleprofile", femaleProfile);
-    console.log("femaleError", femaleError);
+    console.log("Female profile fetch result:", {
+      hasEmbedding: !!femaleProfile?.embedding,
+      hasStringifiedData: !!femaleProfile?.stringified_data,
+      error: femaleError
+    });
 
     if (femaleError || !femaleProfile) {
       console.log("Female profile not found:", femaleError);
@@ -66,12 +81,19 @@ export async function GET(req: NextRequest) {
       throw maleError;
     }
 
-    console.log(`Found ${maleProfiles.length} male profiles`);
+    console.log(`Found ${maleProfiles?.length || 0} male profiles with embeddings`);
 
     console.log("Calculating similarity scores");
     const matches = maleProfiles
-      .filter((profile) => profile.embedding && femaleProfile.embedding)
+      .filter((profile) => {
+        const hasEmbedding = !!profile.embedding && !!femaleProfile.embedding;
+        if (!hasEmbedding) {
+          console.log(`Profile ${profile.id} missing embedding`);
+        }
+        return hasEmbedding;
+      })
       .map((profile) => {
+        console.log(`Processing male profile ${profile.id}`);
         const similarity = cosineSimilarity(
           JSON.parse(femaleProfile.embedding),
           JSON.parse(profile.embedding)
@@ -90,11 +112,12 @@ export async function GET(req: NextRequest) {
 
     console.log(
       "Top 3 matches:",
-      matches.map((m) => m.profile_id)
+      matches.map(m => ({ id: m.profile_id, score: m.similarity }))
     );
 
     // Check if we have any matches
     if (matches.length === 0) {
+      console.log("No valid matches found");
       return NextResponse.json({
         matches: [],
         message: "No male profiles found for matching",
@@ -104,7 +127,12 @@ export async function GET(req: NextRequest) {
     // Separate the full data for the top match from the other match IDs
     const [topMatch, ...otherMatches] = matches;
 
-    console.log("Preparing response");
+    console.log("Preparing response with top match:", {
+      topMatchId: topMatch.profile_id,
+      topMatchScore: topMatch.similarity,
+      otherMatchIds: otherMatches.map(m => m.profile_id)
+    });
+
     return NextResponse.json({
       matches: matches.map((m) => m.profile_id),
       topMatchData: {
