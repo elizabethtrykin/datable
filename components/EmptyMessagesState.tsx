@@ -3,7 +3,7 @@ import { EmptyTweetSkeleton } from "./EmptyTweetSkeleton";
 
 export default function EmptyMessageState() {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center group">
+    <div className="w-full flex flex-col items-center justify-center group h-[400px] self-center my-auto">
       <div className="relative w-full max-w-md h-fit pb-12 flex items-center justify-center">
         <div className="absolute bottom-24 -rotate-12 left-1/2 -translate-x-1/2 size-16 z-30 bg-white rounded-xl flex items-center justify-center border-2 transition-all duration-150 group-hover:rotate-[0deg]">
           <img

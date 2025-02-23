@@ -62,10 +62,10 @@ export default function ChatPage() {
   return (
     <ResizablePanelGroup
       direction="horizontal"
-      className="min-h-screen max-w-full h-screen border md:min-w-[450px]"
+      className="min-h-screen max-w-full max-h-screen border md:min-w-[450px] overflow-hidden"
     >
       <ResizablePanel defaultSize={50} minSize={25}>
-        <div className="flex h-full items-center justify-center relative p-6">
+        <div className="flex h-full items-center justify-center relative overflow-y-auto">
           <MessageList />
 
           <div className="absolute bottom-2 left-2 flex flex-row gap-2 ">
