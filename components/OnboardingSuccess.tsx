@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface OnboardingSuccessProps {
@@ -7,7 +6,6 @@ interface OnboardingSuccessProps {
 }
 
 export function OnboardingSuccess({ firstName }: OnboardingSuccessProps) {
-  const router = useRouter();
   const [showSecond, setShowSecond] = useState(false);
 
   return (
@@ -39,11 +37,6 @@ export function OnboardingSuccess({ firstName }: OnboardingSuccessProps) {
                 transition={{
                   duration: 0.4,
                   ease: "easeInOut",
-                }}
-                onAnimationComplete={() => {
-                  setTimeout(() => {
-                    router.push("/chat");
-                  }, 2000);
                 }}
                 className="text-sm absolute w-full"
               >

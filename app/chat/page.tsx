@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -8,13 +9,44 @@ import {
 import { MessageList } from "@/components/MessageList";
 import VoiceVisualization from "@/components/VoiceWaves";
 import { useMessages } from "@/contexts/MessagesContext";
+import { useMatchedPerson } from "@/contexts/MatchedPersonContext";
 import { Button } from "@/components/ui/button";
 import { Heart, X } from "lucide-react";
+import { Icons } from "@/components/ui/icons";
 
 export default function ChatPage() {
   const { messages } = useMessages();
+  const { matchedPersonData, isAwaitingMatch, findMatch } = useMatchedPerson();
+
+  console.log("matched person data ", matchedPersonData);
+  const [userData, setUserData] = useState<{ firstName: string } | null>(null);
 
   const canPerformEarlyAction = messages.length > 0;
+
+  useEffect(() => {
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    }
+    findMatch();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (isAwaitingMatch || !matchedPersonData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-5xl font-bold mb-4">
+            Hey {userData?.firstName || "there"},
+          </h2>
+          <div className="flex items-center gap-2">
+            <span>finding your perfect match</span>
+            <Icons.spinner />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ResizablePanelGroup
       direction="horizontal"

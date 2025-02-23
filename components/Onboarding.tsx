@@ -2,6 +2,7 @@ import { useState } from "react";
 import { GenderSelection } from "./GenderSelection";
 import { ProfileForm } from "./ProfileForm";
 import { OnboardingSuccess } from "./OnboardingSuccess";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   gender?: "male" | "female";
@@ -13,6 +14,7 @@ interface FormData {
 }
 
 export function Onboarding() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState<FormData>({});
@@ -46,28 +48,36 @@ export function Onboarding() {
           ? `https://www.linkedin.com/in/${updatedData.linkedinHandle.trim()}/`
           : null,
         personal_website: updatedData.personalWebsite?.trim() || null,
-        other_links:
-          updatedData.otherLinks?.map((link) => link.trim()) || null,
+        other_links: updatedData.otherLinks?.map((link) => link.trim()) || null,
       }),
     });
 
     const result = await response.json();
 
     // If female profile, get matches
-    if (updatedData.gender === 'female' && result.profile_id) {
-      const matchResponse = await fetch(`/api/match?profile_id=${result.profile_id}`);
+    if (updatedData.gender === "female" && result.profile_id) {
+      const matchResponse = await fetch(
+        `/api/match?profile_id=${result.profile_id}`
+      );
       const { matches, topMatchData, profileData } = await matchResponse.json();
-      
+
       // Store all the context data
-      localStorage.setItem('matches', JSON.stringify(matches));
-      localStorage.setItem('conversationContext', JSON.stringify({
-        female: profileData,
-        male: topMatchData
-      }));
+      localStorage.setItem("matches", JSON.stringify(matches));
+      localStorage.setItem(
+        "conversationContext",
+        JSON.stringify({
+          female: profileData,
+          male: topMatchData,
+        })
+      );
     }
 
     setFormData(updatedData);
     setShowSuccess(true);
+
+    setTimeout(() => {
+      router.push("/chat");
+    }, 2000);
   };
 
   if (showSuccess) {
