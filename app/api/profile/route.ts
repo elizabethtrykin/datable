@@ -25,11 +25,11 @@ async function generateEmbedding(text: string) {
     });
     return response.data[0].embedding;
   } catch (error: any) {
-    if (error?.message?.includes('maximum context length')) {
-      console.log('Text too long, truncating...');
+    if (error?.message?.includes("maximum context length")) {
+      console.log("Text too long, truncating...");
       const maxChars = Math.floor(8192 * 3.5);
       const truncatedText = text.slice(0, maxChars);
-      
+
       const truncatedResponse = await openai.embeddings.create({
         input: truncatedText,
         model: "text-embedding-3-small",
@@ -51,11 +51,12 @@ async function findMatch(profileId: string) {
   if (!maleProfiles?.length) return null;
 
   // Get random male profile for now (we'll implement proper matching later)
-  const randomMatch = maleProfiles[Math.floor(Math.random() * maleProfiles.length)];
-  
+  const randomMatch =
+    maleProfiles[Math.floor(Math.random() * maleProfiles.length)];
+
   return {
     profile_id: randomMatch.id,
-    stringified_data: randomMatch.stringified_data
+    stringified_data: randomMatch.stringified_data,
   };
 }
 
@@ -155,12 +156,17 @@ export async function POST(req: NextRequest) {
         const allData: any = {};
 
         // Fetch all data in parallel
-        const [twitterData, linkedinData, websiteData, otherLinksData] = await Promise.all([
-          twitter_handle ? fetchTwitterData(twitter_handle, exa) : null,
-          linkedin_url ? fetchLinkedInData(linkedin_url, exa) : null,
-          personal_website ? fetchWebsiteData(personal_website, exa) : null,
-          other_links?.length ? Promise.all(other_links.map((url: string) => fetchOtherLinkData(url, exa))) : null
-        ]);
+        const [twitterData, linkedinData, websiteData, otherLinksData] =
+          await Promise.all([
+            twitter_handle ? fetchTwitterData(twitter_handle, exa) : null,
+            linkedin_url ? fetchLinkedInData(linkedin_url, exa) : null,
+            personal_website ? fetchWebsiteData(personal_website, exa) : null,
+            other_links?.length
+              ? Promise.all(
+                  other_links.map((url: string) => fetchOtherLinkData(url, exa))
+                )
+              : null,
+          ]);
 
         // Update data if available
         if (twitterData) {
@@ -176,7 +182,7 @@ export async function POST(req: NextRequest) {
           allData.website = websiteData;
         }
         if (otherLinksData?.length) {
-          const validData = otherLinksData.filter(data => data !== null);
+          const validData = otherLinksData.filter((data) => data !== null);
           if (validData.length > 0) {
             updates.other_links_data = validData;
             allData.other_links = validData;
@@ -185,7 +191,7 @@ export async function POST(req: NextRequest) {
 
         // Create formatted data and embedding if we have any data
         if (Object.keys(allData).length > 0) {
-          console.log('Creating formatted data with:', { allData });
+          console.log("Creating formatted data with:", { allData });
           const formattedData = formatProfileData({
             gender,
             twitter_handle,
@@ -197,21 +203,18 @@ export async function POST(req: NextRequest) {
             website_data: allData.website,
             other_links_data: allData.other_links,
           });
-          
-          console.log('Formatted data:', formattedData);
-          console.log('Generating embedding...');
+
+          console.log("Formatted data:", formattedData);
+          console.log("Generating embedding...");
           updates.embedding = await generateEmbedding(formattedData);
-          console.log('Embedding generated:', updates.embedding.length);
+          console.log("Embedding generated:", updates.embedding.length);
           updates.stringified_data = formattedData;
         } else {
-          console.log('No data available to generate embedding');
+          console.log("No data available to generate embedding");
         }
 
         // Update profile with all the data
-        await supabase
-          .from("profiles")
-          .update(updates)
-          .eq("id", profile.id);
+        await supabase.from("profiles").update(updates).eq("id", profile.id);
 
         // If this is a female profile, find a match
         if (gender === "female") {
@@ -220,7 +223,7 @@ export async function POST(req: NextRequest) {
             return {
               profile,
               match,
-              stringified_data: updates.stringified_data
+              stringified_data: updates.stringified_data,
             };
           }
         }
@@ -231,7 +234,10 @@ export async function POST(req: NextRequest) {
           .from("profiles")
           .update({
             processing_status: "failed",
-            error_message: error instanceof Error ? error.message : "Failed to process profile data",
+            error_message:
+              error instanceof Error
+                ? error.message
+                : "Failed to process profile data",
           })
           .eq("id", profile.id);
         throw error;
@@ -245,7 +251,6 @@ export async function POST(req: NextRequest) {
       // Stream updates using Server-Sent Events
       updates_url: `/api/profile/updates?id=${profile.id}`,
     });
-
   } catch (error) {
     return NextResponse.json(
       {

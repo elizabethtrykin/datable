@@ -19,20 +19,25 @@ export default function ChatPage() {
   const { matchedPersonData, isAwaitingMatch, findMatch, profileData } =
     useMatchedPerson();
 
-  console.log("matched person data ", matchedPersonData);
   const [userData, setUserData] = useState<{ firstName: string } | null>(null);
 
   const canPerformEarlyAction = messages.length > 0;
 
   useEffect(() => {
     const storedUserData = localStorage.getItem("userData");
+
+    console.log("stored user data", storedUserData);
     if (storedUserData) {
       setUserData(JSON.parse(storedUserData));
     }
+    console.log("finding match");
     findMatch();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isAwaitingMatch || !matchedPersonData || !profileData) {
+    console.log("isAwaitingMatch", isAwaitingMatch);
+    console.log("matchedPersonData", matchedPersonData);
+    console.log("profileData", profileData);
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center flex items-center justify-center flex-col gap-2">
@@ -56,26 +61,30 @@ export default function ChatPage() {
       <ResizablePanel defaultSize={50} minSize={25}>
         <div className="flex h-full items-center justify-center relative p-6">
           <MessageList />
-          {canPerformEarlyAction && (
-            <div className="absolute bottom-2 left-2 flex flex-row gap-2 ">
-              <Button
-                variant="outline"
-                className="flex flex-row gap-2"
-                disabled={!canPerformEarlyAction}
-              >
-                <X className="size-3" />
-                pass this one
-              </Button>
-              <Button
-                variant="outline"
-                className="flex flex-row gap-2"
-                disabled={!canPerformEarlyAction}
-              >
-                <Heart className="size-3" />
-                intro right now!
-              </Button>
-            </div>
-          )}
+
+          <div className="absolute bottom-2 left-2 flex flex-row gap-2 ">
+            {canPerformEarlyAction && (
+              <>
+                {" "}
+                <Button
+                  variant="outline"
+                  className="flex flex-row gap-2"
+                  disabled={!canPerformEarlyAction}
+                >
+                  <X className="size-3" />
+                  pass this one
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex flex-row gap-2"
+                  disabled={!canPerformEarlyAction}
+                >
+                  <Heart className="size-3" />
+                  intro right now!
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </ResizablePanel>
       <ResizableHandle withHandle />
