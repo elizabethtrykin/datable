@@ -259,7 +259,7 @@ ${contextData.male?.stringified_data || "No data available"}
           },
           firstMessage: `Hi ${
             userData.firstName || "there"
-          }! I've analyzed both profiles and found some cool connections. Do you want to know more?`,
+          }! I found a match for you! Do you want to know more about him?`,
         },
       },
       onConnect: (idk) => {
