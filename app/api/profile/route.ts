@@ -12,7 +12,6 @@ import {
   formatProfileData,
 } from "@/lib/utils";
 
-const exa = new Exa(process.env.EXA_API_KEY as string);
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -116,110 +115,120 @@ export async function POST(req: NextRequest) {
       profile = data;
     }
 
-    // Fetch all available data
-    try {
-      const updates: any = { processing_status: "completed" };
-      const allData: any = {}; // Store all fetched data here
-
-      // Fetch data in parallel
-      const fetchPromises = [];
-
-      if (twitter_handle) {
-        fetchPromises.push(
-          fetchTwitterData(twitter_handle, exa).then((data) => {
-            if (data) {
-              updates.twitter_data = data;
-              allData.twitter = data;
-            }
-          })
-        );
-      }
-
-      if (linkedin_url) {
-        fetchPromises.push(
-          fetchLinkedInData(linkedin_url, exa).then((data) => {
-            if (data) {
-              updates.linkedin_data = data;
-              allData.linkedin = data;
-            }
-          })
-        );
-      }
-
-      if (personal_website) {
-        fetchPromises.push(
-          fetchWebsiteData(personal_website, exa).then((data) => {
-            if (data) {
-              updates.website_data = data;
-              allData.website = data;
-            }
-          })
-        );
-      }
-
-      if (other_links?.length) {
-        fetchPromises.push(
-          Promise.all(
-            other_links.map((url: string) => fetchOtherLinkData(url, exa))
-          ).then((dataArray) => {
-            const validData = dataArray.filter((data) => data !== null);
-            if (validData.length > 0) {
-              updates.other_links_data = validData;
-              allData.other_links = validData;
-            }
-          })
-        );
-      }
-
-      // Wait for all fetches to complete
-      await Promise.all(fetchPromises);
-
-      // Only proceed with embedding if we have any data
-      if (Object.keys(allData).length > 0) {
-        // Create a formatted text representation of all data
-        const formattedData = formatProfileData({
-          gender,
-          twitter_handle,
-          linkedin_url,
-          personal_website,
-          other_links,
-          twitter_data: allData.twitter,
-          linkedin_data: allData.linkedin,
-          website_data: allData.website,
-          other_links_data: allData.other_links,
-        });
-
-        // Generate embedding from the formatted data
-        updates.embedding = await generateEmbedding(formattedData);
-        updates.stringified_data = formattedData;
-      } else {
-        updates.processing_status = "failed";
-        updates.error_message = "No social data could be fetched";
-      }
-
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", profile.id);
-
-      if (updateError) throw updateError;
-    } catch (error) {
-      await supabase
-        .from("profiles")
-        .update({
-          processing_status: "failed",
-          error_message:
-            error instanceof Error
-              ? error.message
-              : "Failed to fetch profile data",
-        })
-        .eq("id", profile.id);
-    }
-
-    return NextResponse.json({
+    // Return immediately with the profile ID
+    const response = NextResponse.json({
       message: existingProfile ? "Profile updated" : "Profile created",
       profile_id: profile.id,
     });
+
+    // Process data fetching in the background
+    (async () => {
+      try {
+        const exa = new Exa(process.env.EXA_API_KEY as string);
+        const openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
+
+        const updates: any = { processing_status: "completed" };
+        const allData: any = {}; // Store all fetched data here
+
+        // Fetch data in parallel
+        const fetchPromises = [];
+
+        if (twitter_handle) {
+          fetchPromises.push(
+            fetchTwitterData(twitter_handle, exa).then((data) => {
+              if (data) {
+                updates.twitter_data = data;
+                allData.twitter = data;
+              }
+            })
+          );
+        }
+
+        if (linkedin_url) {
+          fetchPromises.push(
+            fetchLinkedInData(linkedin_url, exa).then((data) => {
+              if (data) {
+                updates.linkedin_data = data;
+                allData.linkedin = data;
+              }
+            })
+          );
+        }
+
+        if (personal_website) {
+          fetchPromises.push(
+            fetchWebsiteData(personal_website, exa).then((data) => {
+              if (data) {
+                updates.website_data = data;
+                allData.website = data;
+              }
+            })
+          );
+        }
+
+        if (other_links?.length) {
+          fetchPromises.push(
+            Promise.all(
+              other_links.map((url: string) => fetchOtherLinkData(url, exa))
+            ).then((dataArray) => {
+              const validData = dataArray.filter((data) => data !== null);
+              if (validData.length > 0) {
+                updates.other_links_data = validData;
+                allData.other_links = validData;
+              }
+            })
+          );
+        }
+
+        // Wait for all fetches to complete
+        await Promise.all(fetchPromises);
+
+        // Only proceed with embedding if we have any data
+        if (Object.keys(allData).length > 0) {
+          // Create a formatted text representation of all data
+          const formattedData = formatProfileData({
+            gender,
+            twitter_handle,
+            linkedin_url,
+            personal_website,
+            other_links,
+            twitter_data: allData.twitter,
+            linkedin_data: allData.linkedin,
+            website_data: allData.website,
+            other_links_data: allData.other_links,
+          });
+
+          // Generate embedding from the formatted data
+          updates.embedding = await generateEmbedding(formattedData);
+          updates.stringified_data = formattedData;
+        } else {
+          updates.processing_status = "failed";
+          updates.error_message = "No social data could be fetched";
+        }
+
+        await supabase
+          .from("profiles")
+          .update(updates)
+          .eq("id", profile.id);
+
+      } catch (error) {
+        await supabase
+          .from("profiles")
+          .update({
+            processing_status: "failed",
+            error_message:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch profile data",
+          })
+          .eq("id", profile.id);
+      }
+    })();
+
+    return response;
+
   } catch (error) {
     return NextResponse.json(
       {

@@ -35,9 +35,7 @@ export function Onboarding() {
       body: JSON.stringify({
         gender: updatedData.gender,
         twitter_handle: updatedData.twitterHandle?.trim() || null,
-        linkedin_url: updatedData.linkedinHandle
-          ? `https://www.linkedin.com/in/${updatedData.linkedinHandle.trim()}/`
-          : null,
+        linkedin_url: updatedData.linkedinHandle || null,
         personal_website: updatedData.personalWebsite?.trim() || null,
         other_links: updatedData.otherLinks?.map((link) => link.trim()) || null,
       }),

@@ -58,11 +58,39 @@ export default {
   		},
   		animation: {
   			'fade-up': 'fadeUp 0.5s ease-out forwards',
+  			'fade-in': 'fadeIn 0.3s ease-out forwards',
+  			'fade-out': 'fadeOut 0.3s ease-out forwards',
+  			'spin': 'spin 0.6s linear infinite',
+  			'spin-reverse': 'spin 0.6s linear infinite reverse',
+  			'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+  			'bounce-loading': 'bounce 1.5s infinite',
   		},
   		keyframes: {
   			fadeUp: {
   				'0%': { opacity: '0', transform: 'translateY(10px)' },
   				'100%': { opacity: '1', transform: 'translateY(0)' },
+  			},
+  			fadeIn: {
+  				'0%': { opacity: '0' },
+  				'100%': { opacity: '1' },
+  			},
+  			fadeOut: {
+  				'0%': { opacity: '1' },
+  				'100%': { opacity: '0' },
+  			},
+  			spin: {
+  				from: { transform: 'rotate(0deg)' },
+  				to: { transform: 'rotate(360deg)' },
+  			},
+  			bounce: {
+  				'0%, 100%': {
+  					transform: 'translateY(0)',
+  					opacity: '0.5',
+  				},
+  				'50%': {
+  					transform: 'translateY(-25%)',
+  					opacity: '1',
+  				},
   			},
   		},
   	}
